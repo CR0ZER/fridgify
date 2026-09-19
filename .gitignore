@@ -25,3 +25,6 @@ backend/data/
 # Divers
 .DS_Store
 *.log
+
+# Configuration locale de Claude Code (propre à chaque poste)
+.claude/

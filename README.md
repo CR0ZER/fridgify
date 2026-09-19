@@ -1,9 +1,89 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="frontend/public/logo-sombre.png">
+  <img src="frontend/public/logo-clair.png" alt="Fridgify" width="96">
+</picture>
+
 # Fridgify
 
-Inventaire du réfrigérateur, suivi des dates de péremption et liste de courses.
-Progressive Web App auto-hébergée sur une Raspberry Pi, qui prévient
-quand quelque chose va périmer. Accessible depuis le réseau local, et depuis
-n'importe où par Tailscale.
+**Le frigo qui prévient avant que ça périme.**
+
+Inventaire du réfrigérateur, suivi des dates de péremption, plats à cuisiner et
+liste de courses — une application web installable, auto-hébergée sur une
+Raspberry Pi, qui envoie chaque matin l'alerte de ce qui doit partir en premier.
+
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![React](https://img.shields.io/badge/React_18-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-5A0FC8?style=flat-square&logo=pwa&logoColor=white)
+![Raspberry Pi](https://img.shields.io/badge/Raspberry_Pi-A22846?style=flat-square&logo=raspberrypi&logoColor=white)
+![Licence MIT](https://img.shields.io/badge/licence-MIT-1b211f?style=flat-square)
+
+[Fonctionnalités](#fonctionnalités) ·
+[Architecture](#architecture) ·
+[Installation](#installation) ·
+[Développement](#développement) ·
+[API](#api)
+
+</div>
+
+<!-- Captures d'écran à venir : Frigo, détail d'un lot, Plats, Courses, en clair et en sombre. -->
+
+## Pourquoi
+
+Un yaourt oublié au fond du frigo ne prévient pas. Fridgify tient l'inventaire
+à jour, calcule ce qui presse et le dit — sans compte en ligne, sans
+abonnement, sans que les données quittent la maison. Tout tourne sur une
+Raspberry Pi ; le téléphone n'est qu'une fenêtre dessus.
+
+## Fonctionnalités
+
+**Inventaire par lots et par unités.** Un pack de 6 yaourts est un lot de 6
+unités identiques. Le nom et la catégorie se règlent pour tout le lot ; la
+date limite, l'ouverture et la sortie se gèrent unité par unité. Chaque lot
+s'affiche au niveau de son unité la plus urgente.
+
+**Trois niveaux d'urgence, lisibles d'un coup d'œil.** Rouge à un jour ou
+moins, ambre entre deux et trois jours, vert au-delà. En tête d'inventaire,
+une jauge résume l'état du frigo.
+
+**Ouvrir, consommer, jeter.** Ouvrir un produit recalcule sa date limite selon
+sa durée de conservation après ouverture. « Consommé » s'annule pendant quatre
+secondes ; « jeté » et la suppression définitive demandent confirmation — la
+seconde est réservée aux erreurs de saisie et n'entre pas dans les
+statistiques.
+
+**Dates proposées selon la catégorie.** Sept catégories fermées (laitage,
+viande, poisson, légume, fruit, plat préparé, autre) proposent chacune une
+date limite et une durée après ouverture. Une date corrigée à la main n'est
+plus jamais écrasée.
+
+**Scan de ticket de caisse.** Une photo du ticket suffit : le serveur en
+extrait les produits frais avec Gemini, propose une date pour chacun, et rien
+n'est enregistré sans validation ligne par ligne.
+
+**Plats à préparer.** Un plat réserve des produits du frigo sans les
+consommer. L'application calcule ce qui reste libre, la date avant laquelle
+cuisiner, et signale quand le stock passe sous la quantité réservée. Préparer
+le plat consomme les unités les plus urgentes et range les portions au frigo
+comme un reste maison.
+
+**Liste de courses.** Les plats qui font envie, avec ce qu'il faut acheter
+pour les cuisiner. Volontairement indépendante du frigo.
+
+**Alerte quotidienne.** Une notification Web Push chaque matin à 9 h pour ce
+qui périme sous un jour ou est déjà périmé — rien si le frigo est sain.
+
+**Historique.** Part consommée contre part jetée, produits les plus gaspillés
+et dernières sorties.
+
+**Thème clair et sombre.** Selon le téléphone, ou forcé dans les réglages.
+
+**Installable et hors ligne.** Ajoutée à l'écran d'accueil de l'iPhone, elle
+se comporte comme une application native.
 
 ## Architecture
 
@@ -14,7 +94,7 @@ Navigateur (iPhone, ordinateur…)
         │        ▼
         │   tailscaled  :443 ── termine le TLS, renouvelle le certificat
         │        │
-        └─ http://192.168.1.32/  ← réseau local, sans notifications
+        └─ http://<ip-locale>/               ← réseau local, sans notifications
                  ▼
                nginx  :80 ──── sert /var/www/fridgify (build statique)
                  │
@@ -26,34 +106,35 @@ Navigateur (iPhone, ordinateur…)
                                                                           (Apple, Google)
 ```
 
-Les notifications et le mode hors ligne n'existent que sur le chemin HTTPS : les
-navigateurs les réservent aux « contextes sécurisés ». C'est la seule raison
-d'être de Tailscale ici — l'accès à distance n'en est qu'un effet de bord.
+- **Un seul processus permanent**, `fridgify-api`. Un minuteur systemd le
+  rejoint une fois par jour, le temps d'envoyer l'alerte, puis s'arrête.
+- **Le frontend est statique** : compilé une fois, servi par nginx. Aucun
+  serveur Node ne tourne en production.
+- **Toute la logique métier vit dans le backend**, couverte par des tests. Le
+  navigateur n'affiche que ce que l'API calcule.
+- **Tailscale n'est là que pour le HTTPS.** Les notifications et le mode hors
+  ligne exigent un « contexte sécurisé » ; l'accès à distance n'en est qu'un
+  effet de bord.
 
-Un seul processus applicatif tourne en permanence : `fridgify-api`. Un minuteur
-systemd, `fridgify-notifications.timer`, s'y ajoute une fois par jour le temps
-d'envoyer l'alerte de péremption, puis s'arrête. Le frontend est un ensemble de
-fichiers statiques compilés une fois et servis par nginx — il n'y a donc aucun
-serveur de développement à maintenir en vie.
-
-| Dossier     | Contenu                                                    |
-| ----------- | ---------------------------------------------------------- |
-| `backend/`  | API FastAPI, base SQLite, appels Gemini                     |
-| `frontend/` | PWA React + TypeScript, compilée par Vite                   |
-| `deploy/`   | nginx, unités systemd, scripts d'installation et de Tailscale |
-| `legacy/`   | Application Expo/React Native d'origine, conservée pour référence |
+| Dossier     | Contenu                                                        |
+| ----------- | -------------------------------------------------------------- |
+| `backend/`  | API FastAPI, base SQLite, appels Gemini, notifications         |
+| `frontend/` | PWA React + TypeScript, compilée par Vite                      |
+| `deploy/`   | nginx, unités systemd, scripts d'installation et de Tailscale  |
+| `legacy/`   | Application Expo d'origine, archivée pour référence            |
 
 ## Installation
 
-Sur une machine neuve :
+Sur une Raspberry Pi (ou toute machine Debian) :
 
 ```bash
 sudo apt-get install -y nginx nodejs npm python3-venv rsync
+git clone https://github.com/CR0ZER/fridgify.git && cd fridgify
 cp backend/.env.example backend/.env
 ```
 
-Remplir `backend/.env` — au minimum `GEMINI_API_KEY` et `API_KEY`. Les clés de
-notification sont générées par le script d'installation. Pour générer un secret :
+Remplir `backend/.env` — au minimum `API_KEY` et, pour le scan de ticket,
+`GEMINI_API_KEY`. Pour générer un secret :
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
@@ -62,229 +143,142 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 Puis :
 
 ```bash
-sudo ./deploy/install.sh   # venv, services systemd, site nginx, clés
+sudo ./deploy/install.sh   # venv, services systemd, site nginx, clés de notification
 ./deploy/deploy.sh         # compile le frontend et le publie
 ```
 
-L'application est alors disponible sur `http://<ip-de-la-raspberry>/`.
+L'application répond alors sur `http://<ip-de-la-raspberry>/`.
 
-Pour les notifications, il reste à activer le HTTPS :
+### Activer le HTTPS et les notifications
 
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up          # affiche une URL à ouvrir pour autoriser la machine
-sudo ./deploy/tailscale.sh # publie nginx en HTTPS et affiche l'adresse à utiliser
+sudo tailscale up            # affiche une URL pour autoriser la machine
+sudo ./deploy/tailscale.sh   # publie nginx en HTTPS et affiche l'adresse
 ```
 
-## Utilisation quotidienne
+Dans la console d'administration Tailscale, section **DNS**, activer une fois
+pour toutes MagicDNS et « HTTPS Certificates ». Le certificat est ensuite
+renouvelé automatiquement par `tailscaled`.
 
-| Action                                   | Commande                        |
-| ---------------------------------------- | ------------------------------- |
-| Redéployer après modification du frontend | `./deploy/deploy.sh`            |
-| Redémarrer l'API                          | `sudo systemctl restart fridgify-api` |
-| Consulter les journaux de l'API           | `journalctl -u fridgify-api -f` |
-| Recharger nginx                           | `sudo systemctl reload nginx`   |
-| Voir la prochaine alerte de péremption    | `systemctl list-timers fridgify-notifications.timer` |
-| Tester l'alerte sans l'envoyer            | `cd backend && .venv/bin/python -m app.notifications --simuler` |
-| Forcer l'envoi de l'alerte du jour        | `cd backend && .venv/bin/python -m app.notifications --force` |
-| Consulter le journal des alertes          | `journalctl -u fridgify-notifications -f` |
+### Installer sur iPhone
 
-L'API, nginx et le minuteur sont activés au démarrage : ils survivent aux
-redémarrages de la Raspberry.
+1. Installer Tailscale depuis l'App Store et rejoindre le même tailnet.
+2. Ouvrir **l'adresse HTTPS** dans Safari, puis Partager → « Sur l'écran
+   d'accueil ».
+3. Ouvrir Fridgify depuis son icône et activer l'alerte dans Réglages.
 
-## Installer la PWA sur iPhone
+iOS ne donne accès aux notifications qu'aux applications ajoutées à l'écran
+d'accueil, et depuis l'adresse HTTPS : celle en `http://` reste utilisable
+comme secours, sans notifications.
 
-Installez Tailscale depuis l'App Store, connectez-vous au même tailnet que la
-Raspberry, et laissez le VPN actif — il ne consomme presque rien et route en
-direct quand les deux appareils sont sur le même réseau.
+### Au quotidien
 
-Ouvrez ensuite **l'adresse HTTPS** dans Safari, puis Partager → « Sur l'écran
-d'accueil ».
+| Action                                 | Commande                                                   |
+| -------------------------------------- | ---------------------------------------------------------- |
+| Mettre à jour                          | `git pull && ./deploy/deploy.sh`                           |
+| Redémarrer l'API (après un changement backend) | `sudo systemctl restart fridgify-api`              |
+| Journaux de l'API                      | `journalctl -u fridgify-api -f`                            |
+| Prochaine alerte programmée            | `systemctl list-timers fridgify-notifications.timer`       |
+| Prévisualiser l'alerte sans l'envoyer  | `cd backend && .venv/bin/python -m app.notifications --simuler` |
+| Forcer l'envoi de l'alerte du jour     | `cd backend && .venv/bin/python -m app.notifications --force` |
 
-```
-https://<nom>.<tailnet>.ts.net/
-```
-
-**C'est l'adresse HTTPS qu'il faut installer, pas celle en `192.168`.** Pour un
-navigateur, ce sont deux sites distincts : l'icône posée depuis l'adresse locale
-reste une application séparée, sans notification ni hors ligne, avec son propre
-stockage. Si vous avez déjà installé l'ancienne, supprimez son icône pour ne pas
-entretenir deux applications côte à côte.
-
-Ouvrez enfin Fridgify **depuis son icône** et activez les notifications dans
-Réglages. Sous iOS, une page ouverte dans un onglet Safari n'a pas accès au push :
-seule une application ajoutée à l'écran d'accueil l'obtient. L'écran de réglages
-détecte ce cas et vous le dit plutôt que d'afficher un bouton inerte.
-
-L'adresse locale `http://192.168.1.32/` continue de fonctionner comme avant, sans
-notifications : gardez-la comme secours si Tailscale est en panne.
-
-## Appeler l'API directement
-
-FastAPI écoute sur le port 8000, joignable depuis tout le réseau local. Chaque
-requête doit porter le secret défini dans `backend/.env` :
+Sauvegarder la base (la Raspberry n'a pas besoin de l'outil `sqlite3`) :
 
 ```bash
-curl -H "X-API-Key: $VOTRE_CLE" http://192.168.1.32:8000/api/produits
+cd backend && .venv/bin/python -c "import sqlite3; sqlite3.connect('data/fridgify.db').backup(sqlite3.connect('sauvegarde.db'))"
 ```
-
-Documentation interactive générée automatiquement :
-`http://192.168.1.32:8000/docs`
-
-Seul `/api/health` répond sans clé — il sert de sonde et indique ce qui est
-configuré côté serveur.
-
-### Points d'entrée principaux
-
-| Méthode  | Chemin                    | Rôle                                        |
-| -------- | ------------------------- | ------------------------------------------- |
-| `GET`    | `/api/produits`           | Inventaire actif, trié par urgence          |
-| `DELETE` | `/api/produits`           | Vide le frigo                               |
-| `POST`   | `/api/lots`               | Crée *n* unités partageant un même lot      |
-| `PATCH`  | `/api/lots/{lot_id}`      | Renomme / recatégorise tout un lot          |
-| `PATCH`  | `/api/produits/{id}`      | Modifie une unité                           |
-| `POST`   | `/api/produits/{id}/ouvrir` | Marque ouvert et recalcule la DLC         |
-| `POST`   | `/api/produits/{id}/statut` | `{"statut": "consomme" \| "jete"}`        |
-| `DELETE` | `/api/produits/{id}/statut` | Annule la clôture                         |
-| `GET`    | `/api/stats`              | Statistiques et derniers mouvements         |
-| `GET/PUT/DELETE` | `/api/settings/{clé}` | Prompts personnalisés                   |
-| `POST`   | `/api/llm/scan`           | Photo de ticket → produits détectés         |
-| `GET/POST` | `/api/courses`          | Liste de courses : envies de plats          |
-| `PATCH/DELETE` | `/api/courses/{id}` | Modifie / retire une envie                  |
-| `POST`   | `/api/courses/{id}/achat` | Marque acheté                               |
-| `DELETE` | `/api/courses/{id}/achat` | Remet dans la liste                         |
-| `DELETE` | `/api/courses/achetes`    | Retire tout ce qui est acheté               |
-| `GET`    | `/api/push/etat`          | Clé publique VAPID et appareils abonnés     |
-| `POST`   | `/api/push/abonnements`   | Abonne cet appareil aux notifications       |
-| `DELETE` | `/api/push/abonnements`   | Désabonne un appareil                       |
-| `POST`   | `/api/push/test`          | Envoie l'alerte du jour immédiatement       |
-
-## Tests
-
-```bash
-cd backend
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest
-```
-
-La suite couvre la logique métier du backend : cycle de vie d'un produit,
-réservation et préparation d'un plat, liste de courses, fermeture des catégories, extraction du
-JSON renvoyé par Gemini, et les notifications — sélection des produits urgents,
-formulation, garde-fou du jour et purge des abonnements expirés. Les envois y
-sont toujours simulés : aucun test ne joint un service de push. Elle tourne sur une base temporaire, jamais sur celle de
-production.
-
-## Catégories et durées de conservation
-
-`backend/app/categories.py` est la source unique : la liste déroulante de
-l'interface, le prompt de scan et les DLC proposées en découlent tous. Ajouter
-une catégorie là la fait apparaître partout.
-
-Les durées ne servent qu'à **proposer** une date à la saisie ; elle reste
-modifiable produit par produit, et une date corrigée à la main n'est jamais
-réécrite par un changement de catégorie.
-
-Les valeurs hors liste — celles que Gemini renvoie parfois malgré la consigne,
-comme « Légumes » — sont rattachées à la catégorie canonique, et retombent sur
-« Autre » si elles restent inconnues.
 
 ## Développement
 
 ```bash
-# Terminal 1 — API avec rechargement automatique
-cd backend && .venv/bin/uvicorn app.main:app --reload
+# API, avec rechargement automatique
+cd backend
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+cp .env.example .env        # API_KEY : n'importe quelle valeur en local
+.venv/bin/uvicorn app.main:app --reload
 
-# Terminal 2 — frontend
-cd frontend && npm run dev
+# Frontend, dans un second terminal
+cd frontend
+npm install
+npm run dev                 # http://localhost:5173
 ```
 
-Le serveur de développement Vite écoute sur le port 5173 et relaie `/api` vers
-le port 8000 en ajoutant lui-même la clé, comme le fait nginx en production.
+Le serveur Vite relaie `/api` vers le port 8000 en ajoutant lui-même la clé
+lue dans `backend/.env`, comme nginx en production. Sous Windows, remplacer
+`.venv/bin/` par `.venv\Scripts\`.
 
-## Sécurité
-
-- La clé Gemini ne vit que dans `backend/.env`, côté serveur. Elle n'est jamais
-  envoyée au navigateur — contrairement à la version Expo, où `EXPO_PUBLIC_…`
-  l'embarquait dans le bundle.
-- La clé d'API est injectée par nginx dans le relais `/api`. Le JavaScript servi
-  au navigateur ne la contient pas.
-- `backend/.env` et le fichier de base de données sont exclus du dépôt.
-- La clé VAPID **privée** reste sur le serveur ; seule la publique descend au
-  navigateur, ce qui est sa fonction : elle ne permet que de vérifier que les
-  notifications viennent bien de ce serveur.
-- Le contenu des notifications est chiffré de bout en bout. Apple et Google
-  relaient les messages sans pouvoir les lire.
-
-## HTTPS par Tailscale
-
-`deploy/tailscale.sh` publie nginx en HTTPS avec `tailscale serve`. Le TLS est
-terminé par `tailscaled`, qui obtient le certificat et **le renouvelle seul**.
-
-C'est la raison du choix : un certificat posé à la main dans nginx via
-`tailscale cert` expire au bout de 90 jours, et l'application tomberait alors en
-panne sans prévenir — en emportant les notifications avec elle. Rien à ajouter
-dans la configuration nginx, et aucun port ouvert sur la box.
-
-Deux réglages sont nécessaires une fois pour toutes dans la console
-d'administration Tailscale, sous **DNS** : activer MagicDNS et « HTTPS
-Certificates ». Sans eux, `tailscale serve` refuse de démarrer ; le script le
-détecte et l'indique.
-
-Vérifier l'état à tout moment :
+### Tests
 
 ```bash
-tailscale serve status
+cd backend && .venv/bin/python -m pytest
 ```
 
-L'application ne nécessitait aucune adaptation : elle n'utilise que des chemins
-relatifs (`/api`), nginx répond sur `server_name _`, et le CORS est réglé par
-variable d'environnement.
+La suite couvre la logique métier : cycle de vie d'un produit, réservation et
+préparation d'un plat, liste de courses, fermeture des catégories, lecture de
+la réponse de Gemini, sélection et formulation des alertes, purge des
+abonnements expirés. Elle tourne sur une base temporaire et simule tous les
+envois : aucun test ne touche la production ni un service externe.
 
-## Notifications de péremption
+### Conventions
 
-Une alerte par jour à 9 h, pour ce qui périme sous `NOTIFICATION_SEUIL_JOURS`
-jours ou est déjà périmé. Rien ne part si le frigo est sain.
+Interface et code sont en français. Les couleurs ne vivent que dans
+`frontend/src/styles/theme.css`, sous forme de variables pour les deux
+palettes. Le détail est dans [`AGENTS.md`](AGENTS.md).
 
-Trois pièces :
+## API
 
-| Pièce | Rôle |
-| --- | --- |
-| `app/push.py` | Transport : signature VAPID, chiffrement, purge des abonnements morts |
-| `app/notifications.py` | Contenu : sélection des produits urgents et formulation |
-| `fridgify-notifications.timer` | Déclenchement quotidien, `Persistent=true` |
-
-Le minuteur est `Persistent=true` : une Raspberry éteinte à 9 h envoie l'alerte
-dès son allumage au lieu de sauter la journée. Un marqueur en base empêche qu'un
-redémarrage le même jour renotifie — et il n'est posé que si un appareil a
-réellement reçu l'alerte, pour qu'une panne réseau reste rattrapable.
-
-Un abonnement que le service de push déclare expiré (404 ou 410) est supprimé
-automatiquement : c'est la seule façon d'apprendre qu'une application a été
-désinstallée, le navigateur ne prévenant personne.
-
-Vérifier la formulation sans rien envoyer :
+Documentation interactive générée par FastAPI : `http://<ip>:8000/docs`.
+Chaque requête porte le secret de `backend/.env` dans le header `X-API-Key` —
+sauf `/api/health`, qui sert de sonde.
 
 ```bash
-cd backend && .venv/bin/python -m app.notifications --simuler
+curl -H "X-API-Key: $CLE" http://<ip>:8000/api/produits
 ```
 
-## Liste de courses
+<details>
+<summary><b>Points d'entrée</b></summary>
 
-L'onglet Courses note des **plats qui font envie**, avec en option ce qu'il faut
-acheter pour les cuisiner. Chaque envie est *à acheter* puis *achetée*, sur le
-modèle des plats *à préparer* / *préparés* ; un achat coché par erreur se remet
-dans la liste.
+| Méthode             | Chemin                          | Rôle                                         |
+| ------------------- | ------------------------------- | -------------------------------------------- |
+| `GET`               | `/api/health`                   | Sonde, sans clé                              |
+| `GET`               | `/api/produits`                 | Inventaire actif, trié par urgence           |
+| `DELETE`            | `/api/produits`                 | Vide le frigo                                |
+| `PATCH` / `DELETE`  | `/api/produits/{id}`            | Modifie / supprime une unité                 |
+| `POST`              | `/api/produits/{id}/ouvrir`     | Marque ouverte et recalcule la date limite   |
+| `POST` / `DELETE`   | `/api/produits/{id}/statut`     | Consommée ou jetée / annule la sortie        |
+| `POST`              | `/api/lots`                     | Crée un lot de *n* unités                    |
+| `GET` / `PATCH`     | `/api/lots/{lot_id}`            | Lit / renomme et recatégorise un lot         |
+| `GET`               | `/api/categories`               | Catégories et durées de conservation         |
+| `GET` / `POST`      | `/api/plats`                    | Plats prévus et préparés / nouveau plat      |
+| `GET` / `PATCH` / `DELETE` | `/api/plats/{id}`        | Lit / modifie / annule un plat               |
+| `POST`              | `/api/plats/{id}/preparer`      | Consomme les réservations, range les portions |
+| `GET`               | `/api/disponibilites`           | Ce que chaque lot peut encore fournir        |
+| `GET` / `POST`      | `/api/courses`                  | Liste de courses                             |
+| `PATCH` / `DELETE`  | `/api/courses/{id}`             | Modifie / retire une envie                   |
+| `POST` / `DELETE`   | `/api/courses/{id}/achat`       | Marque achetée / remet dans la liste         |
+| `DELETE`            | `/api/courses/achetes`          | Retire tout ce qui est acheté                |
+| `GET`               | `/api/stats`                    | Statistiques et dernières sorties            |
+| `GET` / `PUT` / `DELETE` | `/api/settings/{clé}`      | Prompt de scan personnalisé                  |
+| `POST`              | `/api/llm/scan`                 | Photo de ticket → produits détectés          |
+| `GET`               | `/api/push/etat`                | Clé publique et appareils abonnés            |
+| `POST` / `DELETE`   | `/api/push/abonnements`         | Abonne / désabonne un appareil               |
+| `POST`              | `/api/push/test`                | Envoie l'alerte du jour immédiatement        |
 
-La liste est volontairement détachée du reste : une envie achetée ne crée ni
-produit dans le frigo, ni plat à préparer.
+</details>
 
-## Ce que la version web ne reprend pas
+## Sécurité et vie privée
 
-- **Génération de recettes par IA.** Retirée au profit de la liste de courses :
-  Gemini ne sert plus qu'au scan de ticket.
-- **Sélecteur de fournisseur IA.** L'option Groq levait une exception à chaque
-  usage : elle n'a jamais été implémentée. Le modèle se règle désormais par
-  `GEMINI_MODEL` dans `backend/.env`.
-- **Sauvegarde automatique de la base.** Pas encore mise en place. Une copie
-  ponctuelle se fait avec :
-  `sqlite3 backend/data/fridgify.db ".backup sauvegarde.db"`.
+- **Aucun secret dans le navigateur.** La clé Gemini ne quitte pas le serveur ;
+  la clé d'API est ajoutée par nginx et n'apparaît pas dans le JavaScript
+  servi.
+- **Aucune donnée dans le cloud.** L'inventaire vit dans un fichier SQLite sur
+  la Raspberry. Seule la photo d'un ticket est envoyée à Gemini, au moment du
+  scan.
+- **Notifications chiffrées de bout en bout.** Apple et Google relaient les
+  messages sans pouvoir les lire ; la clé VAPID privée reste sur le serveur.
+- **Aucun port ouvert sur la box.** L'accès à distance passe par Tailscale.
+
+## Licence
+
+[MIT](LICENSE) © Florian Huillet
