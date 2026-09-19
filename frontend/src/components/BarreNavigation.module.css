@@ -21,14 +21,16 @@
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 11px;
-  min-height: 48px;
-  padding: 0 4px 0 8px;
+  align-self: stretch;
+  /* Même marge que le contenu des pages, à l'écart de l'arrondi de l'écran. */
+  padding: 0 12px;
   text-align: left;
 }
 
 .index {
+  padding-top: 5px;
   font: 600 9px var(--font-mono);
   letter-spacing: 0.18em;
   color: color-mix(in srgb, var(--bg) 70%, transparent);
@@ -45,7 +47,6 @@
 
 .caret {
   margin-left: auto;
-  padding-right: 12px;
   font: 400 9px var(--font-mono);
   color: color-mix(in srgb, var(--bg) 55%, transparent);
   transition: transform 0.18s ease;
