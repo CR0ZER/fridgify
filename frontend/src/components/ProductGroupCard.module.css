@@ -1,0 +1,88 @@
+.bouton {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-lg);
+  transition: transform 100ms ease;
+}
+
+.bouton:active {
+  transform: scale(0.985);
+}
+
+.entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.nom {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enteteDroite {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.badge {
+  background: var(--background);
+  border: 1px solid var(--surface-border);
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.dateAchat {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.compteur {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  margin-top: var(--space-sm);
+}
+
+/* Bandeau de reservation : dit pour quel plat le lot est deja engage. */
+.reserve {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--surface-border);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--accent);
+  min-width: 0;
+}
+
+.reserveNoms {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reservePart {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-left: auto;
+}

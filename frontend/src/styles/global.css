@@ -1,0 +1,101 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+/* Le fond est porte par <html>, et par lui seul : il se propage au canvas et
+   couvre donc tout, zone de rebond et bandes sous les barres systeme comprises.
+   Il ne doit surtout pas etre double sur <body> : des que <html> a un fond,
+   celui de <body> cesse de se propager et se peint sur la boite de <body>,
+   c'est-a-dire *au-dessus* du degrade place en z-index: -1, qu'il masquerait. */
+html {
+  background: var(--background);
+}
+
+/* `height: 100%` figeait la hauteur sur le petit viewport iOS : des que le
+   contenu ne defilait pas, la page s'arretait avant le bas de l'ecran. On passe
+   sur une hauteur *minimale* exprimee en dvh, qui suit la barre d'outils
+   mobile, avec 100vh en repli pour les navigateurs sans dvh. */
+html,
+body,
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Colonne flex pour que .page puisse occuper toute la hauteur restante
+   lorsqu'elle est courte, tout en s'etirant librement quand elle deborde. */
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Supprime le rebond elastique et le surlignage bleu au tap sous iOS. */
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  /* 16px minimum : en dessous, Safari iOS zoome automatiquement a la mise au point. */
+  font-size: 16px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Les dates natives s'affichent en clair par defaut : on force le theme sombre. */
+input[type='date'] {
+  color-scheme: dark;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--background);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

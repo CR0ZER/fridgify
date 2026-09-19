@@ -1,0 +1,135 @@
+/* Classes partagees par les ecrans. Les modules CSS ne couvrent que la mise en
+   page propre a chaque composant ; tout ce qui se repete vit ici. */
+
+.page {
+  /* Occupe toute la hauteur restante de #root, sans empecher le debordement
+     quand le contenu est plus long que l'ecran. */
+  flex: 1;
+  width: 100%;
+  padding: calc(var(--safe-top) + var(--space-lg)) var(--space-md) var(--tabbar-space);
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.titre-page {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 25px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.section-label {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: var(--space-sm);
+}
+
+.label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.input-texte {
+  width: 100%;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  padding: 10px var(--space-sm);
+  min-height: 44px;
+  background: rgba(10, 14, 26, 0.4);
+}
+
+.input-texte::placeholder {
+  color: var(--text-secondary);
+}
+
+.input-mono {
+  font-family: var(--font-mono);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  padding: 15px var(--space-md);
+  min-height: 48px;
+  width: 100%;
+  transition: transform 80ms ease, opacity 120ms ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primaire {
+  background: var(--accent);
+  color: var(--background);
+}
+
+.btn-secondaire {
+  border: 1px solid var(--surface-border);
+  color: var(--text-secondary);
+}
+
+.btn-danger {
+  border: 1px solid var(--critical);
+  color: var(--critical);
+  font-size: 13px;
+  min-height: 44px;
+  padding: 12px var(--space-md);
+}
+
+.erreur {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--critical);
+  margin-top: var(--space-lg);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.vide {
+  text-align: center;
+  margin-top: 40px;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+}
+
+.pile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ligne {
+  display: flex;
+  gap: var(--space-sm);
+  /* Si les deux colonnes ne tiennent pas cote a cote, elles s'empilent au lieu
+     de deborder : un champ ne peut plus en recouvrir un autre, quelle que soit
+     la largeur minimale que le navigateur impose a ses controles natifs. */
+  flex-wrap: wrap;
+}
+
+.ligne > * {
+  flex: 1 1 140px;
+  min-width: 0;
+}

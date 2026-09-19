@@ -1,0 +1,103 @@
+.entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.titreGroupe {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.logo {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.titre {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 25px;
+  color: var(--text-primary);
+}
+
+.actionsEntete {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* Deux boutons ronds plutot que des pilules : cote a cote, des pastilles
+   carrees restent lisibles sans manger la largeur du titre. */
+.boutonEntete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--surface-border);
+  color: var(--text-primary);
+  transition: background-color 150ms ease;
+}
+
+.boutonEntete:active {
+  background: rgba(124, 147, 255, 0.15);
+}
+
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.chip {
+  padding: 8px var(--space-md);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--surface-border);
+  background: rgba(21, 26, 46, 0.5);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-height: 36px;
+}
+
+.chipActif {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--background);
+}
+
+/* Segments d'affectation, distincts des filtres par categorie qui les suivent.
+   N'apparaissent que si au moins un plat est prevu. */
+.segments {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-pill);
+  background: rgba(21, 26, 46, 0.5);
+  margin-bottom: var(--space-sm);
+}
+
+.segment {
+  padding: 7px var(--space-md);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-height: 34px;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.segmentActif {
+  background: var(--accent);
+  color: var(--background);
+}

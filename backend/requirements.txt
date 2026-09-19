@@ -1,0 +1,10 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+httpx==0.28.1
+python-multipart==0.0.20
+# Web Push (notifications de peremption). Tire cryptography pour VAPID et le
+# chiffrement du contenu, ainsi que requests et aiohttp ; seul le client
+# synchrone est utilise ici.
+pywebpush==2.5.0

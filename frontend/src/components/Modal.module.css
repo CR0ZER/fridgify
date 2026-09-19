@@ -1,0 +1,39 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  padding-top: calc(var(--space-lg) + var(--safe-top));
+  padding-bottom: calc(var(--space-lg) + var(--safe-bottom));
+  background: rgba(3, 5, 12, 0.65);
+  animation: apparaitre 150ms ease-out;
+}
+
+.dense {
+  background: rgba(3, 5, 12, 0.7);
+}
+
+.fenetre {
+  width: 100%;
+  max-width: 400px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  animation: monter 180ms ease-out;
+}
+
+@keyframes apparaitre {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes monter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}

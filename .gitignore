@@ -1,0 +1,21 @@
+# Dépendances
+node_modules/
+backend/.venv/
+
+# Secrets — ne doivent jamais être commités
+backend/.env
+backend/.env.*.bak
+.env
+.env.local
+
+# Artefacts de build
+frontend/dist/
+frontend/dev-dist/
+*.tsbuildinfo
+
+# Base de données
+backend/data/
+
+# Divers
+.DS_Store
+*.log

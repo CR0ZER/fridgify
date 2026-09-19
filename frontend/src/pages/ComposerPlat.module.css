@@ -1,0 +1,104 @@
+.entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.fermer {
+  padding: 6px;
+  color: var(--text-secondary);
+}
+
+.carte {
+  margin-bottom: var(--space-md);
+}
+
+.produit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--surface-border);
+}
+
+.produit:first-of-type {
+  border-top: none;
+}
+
+.produitInfos {
+  flex: 1;
+  min-width: 0;
+}
+
+.produitNom {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.produitMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.jours {
+  font-family: var(--font-mono);
+}
+
+.epuise {
+  opacity: 0.45;
+}
+
+/* Recapitulatif colle en bas de la zone defilante : la selection reste visible
+   pendant qu'on parcourt une longue liste de produits. */
+.recap {
+  position: sticky;
+  bottom: calc(var(--tabbar-space) - var(--space-md));
+  margin-top: var(--space-lg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-md);
+  background: rgba(21, 26, 46, 0.92);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.recapLigne {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.recapValeur {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.limite {
+  font-family: var(--font-mono);
+}
+
+.vide {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-md) 0;
+}

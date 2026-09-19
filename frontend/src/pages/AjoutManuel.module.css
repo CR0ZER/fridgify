@@ -1,0 +1,60 @@
+.entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.fermer {
+  padding: 6px;
+  color: var(--text-secondary);
+}
+
+.bascule {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.case {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--background);
+}
+
+.caseCochee {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.basculeLabel {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.sauvegarder {
+  margin-top: var(--space-lg);
+}
+
+.indice {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+  line-height: 1.4;
+}

@@ -1,0 +1,93 @@
+.wrapper {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--safe-bottom) + 12px);
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  /* Simple garde-fou : la barre se dimensionne sur son contenu, ce padding
+     l'empeche seulement de toucher le bord sur un tres petit ecran. */
+  padding: 0 10px;
+  pointer-events: none;
+
+  /* Le bouton d'ajout et la barre doivent faire exactement la meme hauteur :
+     on la derive d'une seule source plutot que de la saisir deux fois, sinon
+     les deux valeurs divergent au premier ajustement. */
+  --hauteur-onglet: 44px;
+  --padding-barre: 6px;
+  --hauteur-barre: calc(var(--hauteur-onglet) + 2 * var(--padding-barre) + 2px);
+}
+
+.wrapper > * {
+  pointer-events: auto;
+}
+
+.verre {
+  border: 1px solid var(--surface-border);
+  background: rgba(21, 26, 46, 0.55);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  overflow: hidden;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .verre {
+    background: rgba(21, 26, 46, 0.95);
+  }
+}
+
+.boutonAjout {
+  width: var(--hauteur-barre);
+  height: var(--hauteur-barre);
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  transition: transform 120ms ease;
+}
+
+.boutonAjout:active {
+  transform: scale(0.94);
+}
+
+.barre {
+  display: flex;
+  align-items: center;
+  /* La barre epouse ses pastilles au lieu de s'etirer : etiree, l'espace
+     excedentaire se logeait entre les cercles et contre les bords, ce qui
+     rompait le rythme. Un seul ecart partout — celui du padding — et les
+     cercles se retrouvent a 6 px de chaque bord, dessus et dessous compris. */
+  gap: var(--padding-barre);
+  border-radius: var(--radius-pill);
+  padding: var(--padding-barre);
+  flex: 0 0 auto;
+}
+
+.onglet {
+  /* Carre, donc le fond de l'onglet actif est un cercle et non un ovale. */
+  flex: 0 0 auto;
+  width: var(--hauteur-onglet);
+  height: var(--hauteur-onglet);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: transparent;
+  /* Reprend le ressort de l'Animated.spring d'origine. */
+  transition:
+    background-color 220ms ease,
+    color 220ms ease,
+    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ongletActif {
+  background: var(--accent);
+  color: var(--background);
+  transform: scale(1.06);
+}

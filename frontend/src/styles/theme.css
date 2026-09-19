@@ -1,0 +1,35 @@
+/* Design system porte depuis constants/theme.ts de l'application Expo. */
+:root {
+  --background: #0a0e1a;
+  --blob-blue: #3e63ff;
+  --blob-purple: #8b5cf6;
+  --surface: #151a2e;
+  --surface-border: rgba(255, 255, 255, 0.13);
+  --text-primary: #f2f5fa;
+  --text-secondary: #8791a8;
+  --fresh: #35d399;
+  --warning: #f5b84c;
+  --critical: #f2726b;
+  --accent: #7c93ff;
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  --radius-card: 24px;
+  --radius-button: 14px;
+  --radius-pill: 999px;
+
+  /* Encoches et barre home de l'iPhone, exposees par viewport-fit=cover. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Hauteur reservee sous le contenu pour la barre d'onglets flottante. */
+  --tabbar-space: calc(120px + var(--safe-bottom));
+}

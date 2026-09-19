@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "gestion-frigo",
+    "slug": "gestion-frigo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.crozer.gestionfrigo",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "gestionfrigo",
+    "plugins": [
+      "expo-sqlite",
+      "expo-router",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "58eb2cf7-9184-402b-9e0c-f23a007c7358"
+      }
+    }
+  }
+}

@@ -1,0 +1,53 @@
+.inputCache {
+  display: none;
+}
+
+.resultats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.nomInput {
+  width: 100%;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text-primary);
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+
+.nomInput:focus {
+  border-bottom-color: var(--surface-border);
+}
+
+.champ {
+  margin-bottom: var(--space-sm);
+}
+
+.retirer {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--critical);
+  margin-top: var(--space-sm);
+  padding: 4px 0;
+}
+
+.aide {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-top: var(--space-md);
+  text-align: center;
+}
+
+.progression {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: var(--space-sm);
+}

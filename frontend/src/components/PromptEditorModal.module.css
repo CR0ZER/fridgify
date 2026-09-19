@@ -1,0 +1,35 @@
+.carte {
+  background: rgba(21, 26, 46, 0.94);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.titre {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.zone {
+  width: 100%;
+  min-height: 280px;
+  max-height: 45vh;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  padding: var(--space-sm);
+  background: rgba(10, 14, 26, 0.4);
+  margin-bottom: var(--space-md);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}

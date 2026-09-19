@@ -1,0 +1,97 @@
+.carte {
+  margin-top: var(--space-lg);
+}
+
+.note {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.note code {
+  font-family: var(--font-mono);
+  color: var(--accent);
+}
+
+.diagnostic {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0 var(--space-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.valeur {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.boutonTest {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-button);
+  padding: 12px;
+  min-height: 44px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-primary);
+  width: 100%;
+}
+
+.boutonTest:disabled {
+  opacity: 0.5;
+}
+
+/* Liste des appareils abonnes : un frigo se partage, les alertes aussi. */
+.appareils {
+  list-style: none;
+  margin-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.appareils li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-sm);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.depuis {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.confirmation {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fresh);
+  margin-top: var(--space-sm);
+}
+
+.aide {
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-top: var(--space-sm);
+}

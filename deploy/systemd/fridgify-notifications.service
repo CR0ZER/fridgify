@@ -1,0 +1,27 @@
+[Unit]
+Description=Fridgify — alerte quotidienne de péremption
+Documentation=https://github.com/
+# Les services de push sont sur Internet : inutile de partir sans réseau.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=florian
+Group=florian
+WorkingDirectory=/home/florian/Documents/fridgify/backend
+ExecStart=/home/florian/Documents/fridgify/backend/.venv/bin/python -m app.notifications
+
+# Même durcissement que l'API : le script n'écrit que le marqueur du jour et la
+# purge des abonnements expirés, donc uniquement dans le dossier de la base.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/florian/Documents/fridgify/backend/data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true

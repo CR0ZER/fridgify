@@ -1,0 +1,13 @@
+[Unit]
+Description=Fridgify — déclenche l'alerte de péremption chaque matin
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+
+# Rattrape l'horaire manqué : une Raspberry éteinte à 9 h envoie l'alerte dès
+# son allumage, au lieu de sauter la journée. Le garde-fou côté application
+# empêche qu'un redémarrage le même jour renotifie.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

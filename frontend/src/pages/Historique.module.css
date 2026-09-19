@@ -1,0 +1,130 @@
+.entete {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.retour {
+  padding: 6px;
+  color: var(--text-secondary);
+  display: inline-flex;
+}
+
+.grandNombre {
+  text-align: center;
+  margin-bottom: var(--space-md);
+}
+
+.pourcent {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 44px;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.pourcentLabel {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.barre {
+  display: flex;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--surface-border);
+}
+
+.barreConsomme {
+  background: var(--fresh);
+}
+
+.barreJete {
+  background: var(--critical);
+}
+
+.legende {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-sm);
+}
+
+.legendeItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.rangTop {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-xs) 0;
+  border-top: 1px solid var(--surface-border);
+}
+
+.topNom {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.topCount {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--critical);
+}
+
+.mouvement {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  border-top: 1px solid var(--surface-border);
+}
+
+.badge {
+  padding: 3px var(--space-sm);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.badgeConsomme {
+  background: color-mix(in srgb, var(--fresh) 13%, transparent);
+  color: var(--fresh);
+}
+
+.badgeJete {
+  background: color-mix(in srgb, var(--critical) 13%, transparent);
+  color: var(--critical);
+}
+
+.mouvementNom {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mouvementDate {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.carte {
+  margin-top: var(--space-md);
+}

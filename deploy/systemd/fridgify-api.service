@@ -1,0 +1,35 @@
+[Unit]
+Description=Fridgify API (FastAPI/uvicorn)
+Documentation=https://github.com/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=florian
+Group=florian
+WorkingDirectory=/home/florian/Documents/fridgify/backend
+
+# 0.0.0.0 et non 127.0.0.1 : nginx relaie /api, mais le port 8000 reste joignable
+# directement depuis le reseau local pour les appels manuels, proteges par la
+# cle X-API-Key.
+ExecStart=/home/florian/Documents/fridgify/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+Restart=always
+RestartSec=3
+
+# Durcissement : le service n'ecrit que dans son dossier de base de donnees.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/florian/Documents/fridgify/backend/data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
