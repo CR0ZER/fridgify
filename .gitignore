@@ -12,6 +12,12 @@ backend/.env.*.bak
 frontend/dist/
 frontend/dev-dist/
 *.tsbuildinfo
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Charge chiffrée écrite par le mode curl de pywebpush
+encrypted.data
 
 # Base de données
 backend/data/
