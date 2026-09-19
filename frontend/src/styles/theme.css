@@ -53,7 +53,7 @@
   /* Barre de navigation basse : la rangée de boutons, puis la zone du geste
      d'accueil. La barre de l'iPhone ne mord que sur le bas de cette zone :
      on n'en réserve que ce qu'il faut pour ne pas coller les boutons dessus. */
-  --barre-nav: 50px;
+  --barre-nav: 54px;
   --pied-nav: max(9px, calc(var(--safe-bottom) - 20px));
   --hauteur-nav: calc(var(--barre-nav) + var(--pied-nav));
 }
