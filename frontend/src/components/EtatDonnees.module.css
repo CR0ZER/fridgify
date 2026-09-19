@@ -54,7 +54,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 20px;
-  min-height: calc(100dvh - var(--barre-nav) - var(--safe-bottom) - 9px);
+  min-height: calc(100dvh - var(--hauteur-nav));
   padding: var(--safe-top) 34px 60px;
 }
 

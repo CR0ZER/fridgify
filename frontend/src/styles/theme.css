@@ -50,8 +50,12 @@
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  /* Hauteur de la barre de navigation basse, hors zone du geste d'accueil. */
-  --barre-nav: 62px;
+  /* Barre de navigation basse : la rangée de boutons, puis la zone du geste
+     d'accueil. La barre de l'iPhone ne mord que sur le bas de cette zone :
+     on n'en réserve que ce qu'il faut pour ne pas coller les boutons dessus. */
+  --barre-nav: 54px;
+  --pied-nav: max(9px, calc(var(--safe-bottom) - 8px));
+  --hauteur-nav: calc(var(--barre-nav) + var(--pied-nav));
 }
 
 /* Palette sombre, appliquée quand le téléphone est en mode sombre et que

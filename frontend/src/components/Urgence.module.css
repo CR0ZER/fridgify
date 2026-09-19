@@ -19,7 +19,7 @@
 
 .tranche {
   flex: none;
-  width: 4px;
+  width: 6px;
   background: var(--couleur);
 }
 
