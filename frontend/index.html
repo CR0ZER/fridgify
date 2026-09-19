@@ -9,15 +9,33 @@
     <title>Fridgify</title>
     <meta name="description" content="Inventaire du frigo, suivi des péremptions et liste de courses." />
 
-    <!-- Coloration de la barre d'etat iOS/Android en mode plein ecran -->
-    <meta name="theme-color" content="#0A0E1A" />
+    <!-- Valeurs du theme clair, corrigees avant le premier rendu par le script ci-dessous -->
+    <meta name="theme-color" content="#e4e9e3" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Fridgify" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/favicon-clair.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-clair.png" />
+
+    <!-- Copie de appliquerTheme() (src/utils/theme.ts) : doit s'executer avant
+         l'affichage, sans attendre le bundle, pour eviter un flash de mauvais theme. -->
+    <script>
+      ;(function () {
+        var p = null
+        try {
+          p = localStorage.getItem('fridgify-theme')
+        } catch (e) {}
+        if (p !== 'clair' && p !== 'sombre') p = null
+        var t = p || (matchMedia('(prefers-color-scheme: dark)').matches ? 'sombre' : 'clair')
+        if (p) document.documentElement.setAttribute('data-theme', p)
+        document.querySelector('meta[name="theme-color"]').content =
+          t === 'sombre' ? '#16191a' : '#e4e9e3'
+        document.querySelector('link[rel="apple-touch-icon"]').href = '/apple-touch-icon-' + t + '.png'
+        document.querySelector('link[rel="icon"]').href = '/favicon-' + t + '.png'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

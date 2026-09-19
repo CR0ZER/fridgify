@@ -1,168 +1,147 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 
 import { api } from '../api/client'
 import type { Course } from '../api/types'
+import { numeroSection } from '../components/BarreNavigation'
 import { useConfirm } from '../components/ConfirmDialog'
-import GlassCard from '../components/GlassCard'
-import Icon from '../components/Icon'
-import { useRechargementAuRetour } from '../hooks/useRechargementAuRetour'
-import { formatDateAffichage } from '../utils/date'
+import { ErreurServeur, Squelette } from '../components/EtatDonnees'
+import { useAction, useDonnees } from '../hooks/useDonnees'
+import { dateCourte } from '../utils/date'
 import styles from './Courses.module.css'
 
 export default function Courses() {
-  const [courses, setCourses] = useState<Course[]>([])
-  const [chargement, setChargement] = useState(true)
-  const [erreur, setErreur] = useState<string | null>(null)
-  const [nom, setNom] = useState('')
-  const [note, setNote] = useState('')
-  const [ajoutEnCours, setAjoutEnCours] = useState(false)
-  const champNom = useRef<HTMLInputElement>(null)
+  const { donnees: courses, erreur, recharger } = useDonnees(api.listerCourses)
+  const { agir, erreur: erreurAction } = useAction(recharger)
   const { confirmer, dialogue } = useConfirm()
+  const [nouvelle, setNouvelle] = useState('')
+  const [enEdition, setEnEdition] = useState<number | null>(null)
 
-  const charger = useCallback(async () => {
-    try {
-      setCourses(await api.listerCourses())
-      setErreur(null)
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Chargement impossible.')
-    } finally {
-      setChargement(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void charger()
-  }, [charger])
-  useRechargementAuRetour(charger)
-
-  const agir = async (action: () => Promise<unknown>, echec: string) => {
-    try {
-      await action()
-      await charger()
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : echec)
-    }
+  if (!courses) {
+    return erreur ? <ErreurServeur message={erreur} onReessayer={recharger} /> : <Squelette />
   }
 
   const ajouter = async (event: FormEvent) => {
     event.preventDefault()
-    if (!nom.trim()) return
-
-    setAjoutEnCours(true)
-    await agir(async () => {
-      await api.creerCourse(nom.trim(), note.trim() || null)
-      setNom('')
-      setNote('')
-      champNom.current?.focus()
-    }, 'Ajout impossible.')
-    setAjoutEnCours(false)
+    const nom = nouvelle.trim()
+    if (!nom) return
+    if (await agir(() => api.creerCourse(nom, null))) setNouvelle('')
   }
 
   const supprimer = async (course: Course) => {
     const accepte = await confirmer({
-      titre: 'Retirer de la liste',
+      titre: 'Confirmer — suppression',
       message: `« ${course.nom} » sera retiré de la liste de courses.`,
-      action: 'Retirer',
+      action: 'Supprimer',
       destructif: true,
     })
-    if (accepte) await agir(() => api.supprimerCourse(course.id), 'Suppression impossible.')
+    if (accepte && (await agir(() => api.supprimerCourse(course.id)))) setEnEdition(null)
   }
 
   const viderAchetes = async () => {
     const accepte = await confirmer({
-      titre: 'Vider les achats',
-      message: 'Tout ce qui est déjà acheté disparaîtra de la liste.',
+      titre: 'Confirmer — vider',
+      message: 'Tous les éléments déjà achetés seront retirés de la liste.',
       action: 'Vider',
       destructif: true,
     })
-    if (accepte) await agir(() => api.viderAchetes(), 'Suppression impossible.')
+    if (accepte) await agir(() => api.viderAchetes())
   }
 
   const aAcheter = courses.filter((c) => c.statut === 'a_acheter')
-  const achetes = courses.filter((c) => c.statut === 'achete')
+  const achetes = courses
+    .filter((c) => c.statut === 'achete')
+    .sort((a, b) => (b.date_achat ?? '').localeCompare(a.date_achat ?? ''))
 
   return (
     <main className="page">
-      <h1 className="titre-page">Courses</h1>
+      <header className="entete-page">
+        <p className="kicker">{numeroSection('/courses')} · Liste de courses</p>
+        <h1 className="titre">Courses</h1>
+      </header>
 
-      <GlassCard className={styles.carte}>
-        <form className="pile" onSubmit={ajouter}>
-          <div>
-            <label className="label" htmlFor="nom-envie">
-              Un plat qui vous fait envie
-            </label>
-            <input
-              id="nom-envie"
-              ref={champNom}
-              className="input-texte"
-              value={nom}
-              onChange={(e) => setNom(e.target.value)}
-              placeholder="Gnocchis chèvre miel"
-              maxLength={120}
-              required
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="note-envie">
-              À acheter pour ce plat (facultatif)
-            </label>
-            <input
-              id="note-envie"
-              className="input-texte"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Gnocchis, chèvre, crème fraîche, lardons"
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn btn-primaire"
-            disabled={ajoutEnCours || !nom.trim()}
-          >
-            <Icon nom="plus" taille={20} epaisseur={2.2} />
-            Ajouter à la liste
-          </button>
-        </form>
-      </GlassCard>
+      <form className={`duo ${styles.ajout}`} onSubmit={ajouter}>
+        <input
+          className={`champ ${styles.saisie}`}
+          value={nouvelle}
+          onChange={(e) => setNouvelle(e.target.value)}
+          placeholder="Un plat qui fait envie…"
+          maxLength={120}
+          aria-label="Un plat qui fait envie"
+        />
+        <button type="submit" className={`btn btn-plein ${styles.ajouter}`} disabled={!nouvelle.trim()}>
+          Ajouter
+        </button>
+      </form>
 
-      {erreur && <p className="erreur">{erreur}</p>}
-      {chargement && <div className="spinner" />}
+      {(erreur || erreurAction) && <p className="erreur">{erreur ?? erreurAction}</p>}
 
-      {!chargement && !erreur && courses.length === 0 && (
-        <p className={styles.vide}>
-          <span className={styles.videTitre}>La liste est vide</span>
-          Notez ici les plats qui vous font envie, et ce qu'il faudra acheter pour les cuisiner.
-        </p>
+      {courses.length === 0 && (
+        <div className="vide" style={{ paddingTop: 40 }}>
+          <div className="vide-cadre" />
+          <h2 className="vide-titre">Rien sur la liste.</h2>
+          <p className="texte-aide">
+            Notez les plats qui vous font envie et ce qu'il faut acheter pour les faire. Cette liste
+            est indépendante du frigo.
+          </p>
+        </div>
       )}
 
-      {aAcheter.length > 0 && <h2 className={styles.section}>À acheter</h2>}
-      {aAcheter.map((course) => (
-        <CarteCourse
-          key={course.id}
-          course={course}
-          onAchat={() => agir(() => api.marquerAchete(course.id), 'Action impossible.')}
-          onModifier={(champs) =>
-            agir(() => api.modifierCourse(course.id, champs), 'Modification impossible.')
-          }
-          onSupprimer={() => supprimer(course)}
-        />
-      ))}
+      {aAcheter.map((course) =>
+        enEdition === course.id ? (
+          <EditionCourse
+            key={course.id}
+            course={course}
+            onAnnuler={() => setEnEdition(null)}
+            onSupprimer={() => supprimer(course)}
+            onEnregistrer={async (champs) => {
+              if (await agir(() => api.modifierCourse(course.id, champs))) setEnEdition(null)
+            }}
+          />
+        ) : (
+          <div key={course.id} className={styles.course}>
+            <button
+              type="button"
+              className={styles.case}
+              onClick={() => agir(() => api.marquerAchete(course.id))}
+              aria-label={`Marquer « ${course.nom} » comme acheté`}
+            />
+            <button type="button" className={styles.textes} onClick={() => setEnEdition(course.id)}>
+              <span className={styles.nom}>{course.nom}</span>
+              {course.note && <span className={styles.note}>{course.note}</span>}
+            </button>
+          </div>
+        ),
+      )}
 
       {achetes.length > 0 && (
-        <div className={styles.sectionLigne}>
-          <h2 className={styles.section}>Achetés</h2>
-          <button type="button" className={styles.vider} onClick={viderAchetes}>
+        <div className={styles.titreAchetes}>
+          <h2 className="etiquette" style={{ fontSize: 9.5 }}>
+            Achetés ({achetes.length})
+          </h2>
+          <button type="button" className="btn-lien" style={{ color: 'var(--danger)' }} onClick={viderAchetes}>
             Vider
           </button>
         </div>
       )}
       {achetes.map((course) => (
-        <CarteCourse
-          key={course.id}
-          course={course}
-          onAchat={() => agir(() => api.annulerAchat(course.id), 'Action impossible.')}
-          onSupprimer={() => agir(() => api.supprimerCourse(course.id), 'Suppression impossible.')}
-        />
+        <div key={course.id} className={`${styles.course} ${styles.achetee}`}>
+          <span className={`${styles.case} ${styles.cochee}`} aria-hidden>
+            ✓
+          </span>
+          <div className={styles.textes}>
+            <span className={styles.nom}>{course.nom}</span>
+            <span className="meta" style={{ fontSize: 9 }}>
+              Acheté le {dateCourte(course.date_achat)}
+            </span>
+          </div>
+          <button
+            type="button"
+            className={`btn btn-discret ${styles.remettre}`}
+            onClick={() => agir(() => api.annulerAchat(course.id))}
+          >
+            Remettre
+          </button>
+        </div>
       ))}
 
       {dialogue}
@@ -170,127 +149,59 @@ export default function Courses() {
   )
 }
 
-type CarteProps = {
+function EditionCourse({
+  course,
+  onAnnuler,
+  onSupprimer,
+  onEnregistrer,
+}: {
   course: Course
-  /** Coche l'achat, ou le décoche pour une envie déjà achetée. */
-  onAchat: () => Promise<void>
-  onModifier?: (champs: { nom: string; note: string | null }) => Promise<void>
+  onAnnuler: () => void
   onSupprimer: () => void
-}
-
-function CarteCourse({ course, onAchat, onModifier, onSupprimer }: CarteProps) {
-  const [edition, setEdition] = useState(false)
+  onEnregistrer: (champs: { nom: string; note: string | null }) => void
+}) {
   const [nom, setNom] = useState(course.nom)
   const [note, setNote] = useState(course.note ?? '')
-  const [enCours, setEnCours] = useState(false)
-  const achetee = course.statut === 'achete'
 
-  const ouvrirEdition = () => {
-    setNom(course.nom)
-    setNote(course.note ?? '')
-    setEdition(true)
-  }
-
-  const enregistrer = async (event: FormEvent) => {
+  const enregistrer = (event: FormEvent) => {
     event.preventDefault()
-    if (!onModifier || !nom.trim()) return
-    setEnCours(true)
-    await onModifier({ nom: nom.trim(), note: note.trim() || null })
-    setEnCours(false)
-    setEdition(false)
-  }
-
-  const basculerAchat = async () => {
-    setEnCours(true)
-    await onAchat()
-    setEnCours(false)
-  }
-
-  if (edition) {
-    return (
-      <GlassCard className={styles.carte}>
-        <form className="pile" onSubmit={enregistrer}>
-          <input
-            className="input-texte"
-            value={nom}
-            onChange={(e) => setNom(e.target.value)}
-            aria-label="Nom du plat"
-            maxLength={120}
-            required
-            autoFocus
-          />
-          <input
-            className="input-texte"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            aria-label="À acheter pour ce plat"
-            placeholder="À acheter pour ce plat (facultatif)"
-          />
-          <div className={styles.actions}>
-            <button
-              type="submit"
-              className={`btn btn-primaire ${styles.principal}`}
-              disabled={enCours || !nom.trim()}
-            >
-              Enregistrer
-            </button>
-            <button
-              type="button"
-              className={`btn btn-secondaire ${styles.principal}`}
-              onClick={() => setEdition(false)}
-              disabled={enCours}
-            >
-              Annuler
-            </button>
-          </div>
-        </form>
-      </GlassCard>
-    )
+    if (nom.trim()) onEnregistrer({ nom: nom.trim(), note: note.trim() || null })
   }
 
   return (
-    <GlassCard className={achetee ? `${styles.carte} ${styles.carteAchetee}` : styles.carte}>
-      <h3 className={styles.nom}>{course.nom}</h3>
-      {course.note && <p className={styles.note}>{course.note}</p>}
-      {achetee && course.date_achat && (
-        <p className={styles.date}>Acheté le {formatDateAffichage(course.date_achat)}</p>
-      )}
-
-      <div className={styles.actions}>
+    <form className={styles.edition} onSubmit={enregistrer}>
+      <input
+        className="champ"
+        value={nom}
+        onChange={(e) => setNom(e.target.value)}
+        maxLength={120}
+        required
+        autoFocus
+        aria-label="Nom du plat"
+      />
+      <input
+        className={`champ ${styles.champNote}`}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Ce qu'il faut acheter"
+        aria-label="Ce qu'il faut acheter"
+      />
+      <div className="duo">
         <button
           type="button"
-          className={`btn ${achetee ? 'btn-secondaire' : 'btn-primaire'} ${styles.principal}`}
-          onClick={basculerAchat}
-          disabled={enCours}
-        >
-          {achetee ? (
-            'Remettre dans la liste'
-          ) : (
-            <>
-              <Icon nom="coche" taille={18} epaisseur={2.2} />
-              Acheté
-            </>
-          )}
-        </button>
-        {!achetee && onModifier && (
-          <button
-            type="button"
-            className={styles.boutonIcone}
-            onClick={ouvrirEdition}
-            aria-label={`Modifier ${course.nom}`}
-          >
-            <Icon nom="crayon" taille={18} />
-          </button>
-        )}
-        <button
-          type="button"
-          className={`${styles.boutonIcone} ${styles.boutonSupprimer}`}
+          className={`btn btn-danger ${styles.croix}`}
           onClick={onSupprimer}
-          aria-label={`Retirer ${course.nom}`}
+          aria-label="Supprimer de la liste"
         >
-          <Icon nom="poubelle" taille={18} />
+          ×
+        </button>
+        <button type="button" className="btn" onClick={onAnnuler}>
+          Annuler
+        </button>
+        <button type="submit" className={`btn btn-plein ${styles.enregistrer}`} disabled={!nom.trim()}>
+          Enregistrer
         </button>
       </div>
-    </GlassCard>
+    </form>
   )
 }

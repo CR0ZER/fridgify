@@ -1,215 +1,109 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { api } from '../api/client'
 import type { Plat } from '../api/types'
+import { numeroSection } from '../components/BarreNavigation'
 import { useConfirm } from '../components/ConfirmDialog'
-import GlassCard from '../components/GlassCard'
-import Icon from '../components/Icon'
-import PreparerPlatModal from '../components/PreparerPlatModal'
-import StatusDot from '../components/StatusDot'
-import { useRechargementAuRetour } from '../hooks/useRechargementAuRetour'
-import { formatDateAffichage, joursRestants, libelleJours } from '../utils/date'
-import { couleurUrgence, urgenceLevel } from '../utils/urgence'
+import { ErreurServeur, Squelette } from '../components/EtatDonnees'
+import { Echeance, Tranche } from '../components/Urgence'
+import { useAction, useDonnees } from '../hooks/useDonnees'
+import { dateCourte, joursRestants, pluriel } from '../utils/date'
+import { niveauUrgence } from '../utils/urgence'
 import styles from './Plats.module.css'
 
+/** « Tomates ×2 · Feta ×1 » */
+export const libelleIngredients = (plat: Plat) =>
+  plat.ingredients.map((i) => `${i.nom} ×${i.quantite}`).join(' · ')
+
 export default function Plats() {
-  const [plats, setPlats] = useState<Plat[]>([])
-  const [chargement, setChargement] = useState(true)
-  const [erreur, setErreur] = useState<string | null>(null)
-  const [aPreparer, setAPreparer] = useState<Plat | null>(null)
+  const { donnees: plats, erreur, recharger } = useDonnees(api.listerPlats)
+  const { agir, erreur: erreurAction } = useAction(recharger)
   const { confirmer, dialogue } = useConfirm()
   const naviguer = useNavigate()
 
-  const charger = useCallback(async () => {
-    try {
-      setPlats(await api.listerPlats())
-      setErreur(null)
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Chargement impossible.')
-    } finally {
-      setChargement(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void charger()
-  }, [charger])
-  useRechargementAuRetour(charger)
-
-  const supprimer = async (plat: Plat) => {
-    const accepte = await confirmer({
-      titre: plat.statut === 'prevu' ? 'Annuler ce plat' : 'Retirer de l’historique',
-      message:
-        plat.statut === 'prevu'
-          ? `« ${plat.nom} » sera annulé et ses ingrédients redeviendront disponibles. Rien n'est consommé.`
-          : `« ${plat.nom} » disparaîtra de l'historique. Les portions déjà rangées au frigo ne sont pas touchées.`,
-      action: 'Supprimer',
-      destructif: true,
-    })
-    if (!accepte) return
-
-    try {
-      await api.supprimerPlat(plat.id)
-      await charger()
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Suppression impossible.')
-    }
+  if (!plats) {
+    return erreur ? <ErreurServeur message={erreur} onReessayer={recharger} /> : <Squelette />
   }
 
+  // L'API renvoie déjà les plats prévus du plus urgent au moins urgent.
   const prevus = plats.filter((p) => p.statut === 'prevu')
   const prepares = plats.filter((p) => p.statut === 'prepare')
 
+  const retirer = async (plat: Plat) => {
+    const accepte = await confirmer({
+      titre: 'Confirmer — retrait',
+      message: `« ${plat.nom} » disparaîtra de l’historique. Les portions déjà rangées au frigo ne sont pas touchées.`,
+      action: 'Retirer',
+    })
+    if (accepte) await agir(() => api.supprimerPlat(plat.id))
+  }
+
   return (
     <main className="page">
-      <header className={styles.entete}>
-        <h1 className="titre-page" style={{ marginBottom: 0 }}>
-          Plats
-        </h1>
+      <header className="entete-page">
+        <p className="kicker">{numeroSection('/plats')} · Plats</p>
+        <h1 className="titre">Plats</h1>
       </header>
-
-      <button type="button" className="btn btn-primaire" onClick={() => naviguer('/plats/nouveau')}>
-        <Icon nom="plus" taille={20} epaisseur={2.2} />
-        Composer un plat
-      </button>
-
-      {erreur && <p className="erreur">{erreur}</p>}
-      {chargement && <div className="spinner" />}
-
-      {!chargement && !erreur && plats.length === 0 && (
-        <p className={styles.vide}>
-          <span className={styles.videTitre}>Aucun plat prévu</span>
-          Réservez des produits du frigo pour un plat à venir : vous verrez d'un coup d'œil
-          combien de temps il vous reste pour le cuisiner, et ce qui reste libre à côté.
-        </p>
-      )}
-
-      {prevus.length > 0 && <h2 className={styles.section}>À préparer</h2>}
-      {prevus.map((plat) => (
-        <CartePlat
-          key={plat.id}
-          plat={plat}
-          onPreparer={() => setAPreparer(plat)}
-          onModifier={() => naviguer(`/plats/${plat.id}/modifier`)}
-          onSupprimer={() => supprimer(plat)}
-        />
-      ))}
-
-      {prepares.length > 0 && <h2 className={styles.section}>Déjà préparés</h2>}
-      {prepares.map((plat) => (
-        <CartePlat key={plat.id} plat={plat} onSupprimer={() => supprimer(plat)} />
-      ))}
-
-      <PreparerPlatModal
-        plat={aPreparer}
-        onClose={() => setAPreparer(null)}
-        onPrepare={async () => {
-          setAPreparer(null)
-          await charger()
-        }}
-        onErreur={setErreur}
-      />
-      {dialogue}
-    </main>
-  )
-}
-
-type CarteProps = {
-  plat: Plat
-  onPreparer?: () => void
-  onModifier?: () => void
-  onSupprimer: () => void
-}
-
-function CartePlat({ plat, onPreparer, onModifier, onSupprimer }: CarteProps) {
-  const prevu = plat.statut === 'prevu'
-  const jours = joursRestants(plat.date_limite)
-  const couleur = couleurUrgence(urgenceLevel(jours))
-  const incomplet = prevu && plat.ingredients.some((i) => i.insuffisant)
-
-  return (
-    <GlassCard
-      className={prevu ? styles.carte : `${styles.carte} ${styles.cartePreparee}`}
-      style={
-        prevu
-          ? { boxShadow: `0 5px 10px color-mix(in srgb, ${couleur} 20%, transparent)` }
-          : undefined
-      }
-    >
-      <div className={styles.titreLigne}>
-        <h3 className={styles.nom}>{plat.nom}</h3>
-        {prevu && <StatusDot couleur={couleur} />}
-      </div>
-
-      {plat.note && <p className={styles.note}>{plat.note}</p>}
-
-      {prevu && plat.date_limite && (
-        <p className={styles.avant}>À cuisiner avant le {formatDateAffichage(plat.date_limite)}</p>
-      )}
-      {!prevu && plat.date_preparation && (
-        <p className={styles.avant}>Préparé le {formatDateAffichage(plat.date_preparation)}</p>
-      )}
-
-      {prevu && (
-        <p className={styles.compteur} style={{ color: couleur }}>
-          {libelleJours(jours)}
-        </p>
-      )}
-
-      <ul className={styles.ingredients}>
-        {plat.ingredients.map((ingredient) => (
-          <li
-            key={ingredient.lot_id}
-            className={
-              ingredient.insuffisant && prevu
-                ? `${styles.ingredient} ${styles.ingredientManquant}`
-                : styles.ingredient
-            }
-          >
-            {ingredient.nom}
-            <span className={styles.quantite}>×{ingredient.quantite}</span>
-          </li>
-        ))}
-      </ul>
-
-      {incomplet && (
-        <p className={styles.alerte}>
-          Le stock est passé sous la quantité réservée. En préparant, seul ce qui reste
-          réellement au frigo sera consommé.
-        </p>
-      )}
-
-      {!prevu && plat.lot_resultat && (
-        <p className={styles.resultat}>Les portions ont été rangées dans le frigo.</p>
-      )}
-
-      <div className={styles.actions}>
-        {prevu && (
-          <button type="button" className={`btn btn-primaire ${styles.preparer}`} onClick={onPreparer}>
-            <Icon nom="plat" taille={18} />
-            Préparer
-          </button>
-        )}
-        {prevu && (
-          <button
-            type="button"
-            className={styles.boutonIcone}
-            onClick={onModifier}
-            aria-label={`Modifier ${plat.nom}`}
-          >
-            <Icon nom="crayon" taille={18} />
-          </button>
-        )}
-        <button
-          type="button"
-          className={`${styles.boutonIcone} ${styles.boutonSupprimer}`}
-          onClick={onSupprimer}
-          aria-label={prevu ? `Annuler ${plat.nom}` : `Retirer ${plat.nom}`}
-          style={prevu ? undefined : { marginLeft: 'auto' }}
-        >
-          <Icon nom="poubelle" taille={18} />
+      <div className={styles.nouveau}>
+        <button type="button" className="btn btn-plein" onClick={() => naviguer('/plats/nouveau')}>
+          Nouveau plat
         </button>
       </div>
-    </GlassCard>
+
+      {(erreur || erreurAction) && <p className="erreur">{erreur ?? erreurAction}</p>}
+
+      {plats.length === 0 && (
+        <div className="vide">
+          <div className="vide-cadre" />
+          <h2 className="vide-titre">Aucun plat prévu.</h2>
+          <p className="texte-aide">
+            Un plat réserve des produits déjà au frigo, sans rien consommer. Vous les consommez à la
+            préparation.
+          </p>
+        </div>
+      )}
+
+      {prevus.length > 0 && <h2 className="intertitre" style={{ paddingTop: 6 }}>À préparer ({prevus.length})</h2>}
+      {prevus.map((plat) => {
+        const jours = joursRestants(plat.date_limite)
+        return (
+          <Link key={plat.id} to={`/plats/${plat.id}`} className={styles.plat}>
+            <Tranche niveau={niveauUrgence(jours)} />
+            <div className={styles.platCorps}>
+              <div className={styles.platHaut}>
+                <div className={styles.platTextes}>
+                  <div className={styles.nom}>{plat.nom}</div>
+                  {plat.note && <div className={styles.note}>{plat.note}</div>}
+                </div>
+                <Echeance jours={jours} />
+              </div>
+              <div className="meta">{libelleIngredients(plat)}</div>
+              {plat.ingredients.some((i) => i.insuffisant) && (
+                <span className="pastille" style={{ color: 'var(--danger)' }}>
+                  Stock insuffisant
+                </span>
+              )}
+            </div>
+          </Link>
+        )
+      })}
+
+      {prepares.length > 0 && <h2 className="intertitre">Préparés ({prepares.length})</h2>}
+      {prepares.map((plat) => (
+        <section key={plat.id} className={styles.prepare}>
+          <h3 className={styles.prepareNom}>{plat.nom}</h3>
+          <p className="meta">
+            Préparé le {dateCourte(plat.date_preparation)}
+            {plat.portions ? ` · ${pluriel(plat.portions, 'portion')} rangée${plat.portions > 1 ? 's' : ''}` : ''}
+          </p>
+          <p className={styles.note}>{libelleIngredients(plat)}</p>
+          <button type="button" className={`btn btn-discret ${styles.retirer}`} onClick={() => retirer(plat)}>
+            Retirer de l'historique
+          </button>
+        </section>
+      ))}
+
+      {dialogue}
+    </main>
   )
 }

@@ -1,13 +1,9 @@
-const JOURS = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.']
-
-export function formatDateAffichage(isoDate: string | null | undefined): string {
-  if (!isoDate) return '—'
-  const [annee, mois, jour] = isoDate.split('-').map(Number)
-  if (!annee || !mois || !jour) return isoDate
-  const date = new Date(annee, mois - 1, jour)
-  const dd = String(jour).padStart(2, '0')
-  const mm = String(mois).padStart(2, '0')
-  return `${JOURS[date.getDay()]} ${dd}/${mm}`
+/** Date courte « 15/09 », à la manière des étiquettes de la maquette. */
+export function dateCourte(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const [, mois, jour] = iso.slice(0, 10).split('-')
+  if (!mois || !jour) return iso
+  return `${jour}/${mois}`
 }
 
 /**
@@ -31,25 +27,36 @@ export function joursRestants(dateEffective: string | null | undefined): number 
 
 /** Date du jour au format ISO, dans le fuseau local. */
 export function aujourdHuiISO(): string {
-  const maintenant = new Date()
-  const decalage = maintenant.getTimezoneOffset() * 60_000
-  return new Date(maintenant.getTime() - decalage).toISOString().slice(0, 10)
+  return versISO(new Date())
 }
 
 export function ajouterJoursISO(iso: string, jours: number): string {
   const [annee, mois, jour] = iso.split('-').map(Number)
-  const date = new Date(annee, mois - 1, jour + jours)
-  return aujourdHuiISOde(date)
+  return versISO(new Date(annee, mois - 1, jour + jours))
 }
 
-function aujourdHuiISOde(date: Date): string {
+function versISO(date: Date): string {
   const decalage = date.getTimezoneOffset() * 60_000
   return new Date(date.getTime() - decalage).toISOString().slice(0, 10)
 }
 
-export function libelleJours(jours: number | null): string {
-  if (jours === null) return 'Date inconnue'
-  if (jours < 0) return `Périmé depuis ${Math.abs(jours)}j`
-  if (jours === 0) return "Périme aujourd'hui"
+/** Compte à rebours compact : « J-3 », « J-0 », « J+2 » une fois périmé. */
+export function jeton(jours: number | null): string {
+  if (jours === null) return '—'
+  if (jours < 0) return `J+${-jours}`
   return `J-${jours}`
+}
+
+/** Ce que le jeton veut dire, en toutes lettres. */
+export function legende(jours: number | null): string {
+  if (jours === null) return 'date inconnue'
+  if (jours < 0) return `périmé depuis ${-jours}j`
+  if (jours === 0) return 'périme aujourd’hui'
+  if (jours === 1) return 'périme demain'
+  return 'jours restants'
+}
+
+/** « 1 unité », « 3 unités »… */
+export function pluriel(nombre: number, mot: string): string {
+  return `${nombre} ${mot}${nombre > 1 ? 's' : ''}`
 }

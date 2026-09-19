@@ -1,7 +1,0 @@
-.dot {
-  border-radius: var(--radius-pill);
-  flex-shrink: 0;
-  /* Le halo reprend le `shadowColor` de la pastille RN d'origine. */
-  box-shadow: 0 0 6px currentColor;
-  background: currentColor;
-}

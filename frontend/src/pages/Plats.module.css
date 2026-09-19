@@ -1,160 +1,78 @@
-.entete {
+.nouveau {
+  padding: 0 20px 14px;
+}
+
+.nouveau :global(.btn) {
+  width: 100%;
+  min-height: 50px;
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+}
+
+.plat {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-md);
+  align-items: stretch;
+  background: var(--surf);
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+  color: inherit;
+  text-decoration: none;
 }
 
-.section {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin: var(--space-lg) 0 var(--space-sm);
-}
-
-/* Meme grammaire visuelle que les cartes du frigo : halo colore, pastille
-   d'etat en tete et grand compteur monospace. L'urgence se lit donc de la meme
-   facon dans les deux ecrans, sans rien de nouveau a apprendre. */
-.carte {
-  margin-bottom: var(--space-lg);
-}
-
-.cartePreparee {
-  opacity: 0.6;
-}
-
-.titreLigne {
+.platCorps {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-sm);
+  flex-direction: column;
+  gap: 8px;
+  padding: 15px 18px 15px 14px;
+}
+
+.platHaut {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.platTextes {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .nom {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 17px;
-  color: var(--text-primary);
-  min-width: 0;
+  font: 600 19px/1.12 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .note {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: var(--space-xs);
+  font: 400 12px/1.45 var(--font-display);
+  color: var(--muted);
 }
 
-.avant {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: var(--space-xs);
-}
-
-.compteur {
-  font-family: var(--font-mono);
-  font-size: 20px;
-  margin-top: var(--space-sm);
-}
-
-.ingredients {
+.prepare {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  list-style: none;
-  margin-top: var(--space-md);
+  flex-direction: column;
+  gap: 9px;
+  margin: 0 20px 8px;
+  padding: 14px 15px;
+  border: 1px solid rgba(var(--ink-rgb), 0.14);
+  background: var(--surf);
 }
 
-.ingredient {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  background: rgba(10, 14, 26, 0.55);
-  border: 1px solid var(--surface-border);
-  padding: 6px 10px;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text-primary);
+.prepareNom {
+  font: 600 19px/1.1 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
-.ingredientManquant {
-  border-color: var(--critical);
-  color: var(--critical);
-}
-
-.quantite {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.ingredientManquant .quantite {
-  color: var(--critical);
-}
-
-.alerte {
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--critical);
-  margin-top: var(--space-sm);
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-top: var(--space-md);
-}
-
-.preparer {
-  flex: 1;
+.retirer {
+  align-self: flex-start;
   min-height: 44px;
-  padding: 11px var(--space-md);
-  font-size: 14px;
-  width: auto;
-}
-
-.boutonIcone {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-pill);
-  color: var(--text-secondary);
-}
-
-.boutonSupprimer {
-  color: var(--critical);
-}
-
-.resultat {
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: var(--space-sm);
-}
-
-.vide {
-  text-align: center;
-  margin-top: var(--space-xl);
-  color: var(--text-secondary);
-  font-family: var(--font-body);
-  line-height: 1.6;
-}
-
-.videTitre {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 16px;
-  color: var(--text-primary);
-  margin-bottom: var(--space-sm);
+  padding: 0 14px;
+  font-size: 9.5px;
 }

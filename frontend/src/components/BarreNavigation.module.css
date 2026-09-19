@@ -1,0 +1,131 @@
+.barre {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: 0 8px calc(9px + var(--safe-bottom));
+  background: var(--ink);
+}
+
+.rangee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 560px;
+  height: var(--barre-nav);
+  margin: 0 auto;
+}
+
+.section {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  min-height: 48px;
+  padding: 0 4px 0 8px;
+  text-align: left;
+}
+
+.index {
+  font: 600 9px var(--font-mono);
+  letter-spacing: 0.18em;
+  color: color-mix(in srgb, var(--bg) 70%, transparent);
+}
+
+.courante {
+  font: 800 25px/1 var(--font-display);
+  letter-spacing: -0.04em;
+  color: var(--bg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.caret {
+  margin-left: auto;
+  font: 400 9px var(--font-mono);
+  color: color-mix(in srgb, var(--bg) 55%, transparent);
+  transition: transform 0.18s ease;
+}
+
+.caretOuvert {
+  transform: rotate(180deg);
+}
+
+.courses {
+  flex: none;
+  min-height: 48px;
+  padding: 0 16px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 600 10px var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+/* Liste des sections, posée au-dessus de la barre. */
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: calc(var(--barre-nav) + 9px + var(--safe-bottom));
+  background: rgba(var(--ink-rgb), 0.5);
+  animation: fondu 0.14s ease-out;
+}
+
+.menu {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--bg);
+  border-top: 3px solid var(--ink);
+  animation: monter 0.2s ease-out;
+}
+
+.entree {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+  text-align: left;
+}
+
+.numero {
+  font: 600 9.5px var(--font-mono);
+  letter-spacing: 0.14em;
+  color: rgba(var(--ink-rgb), 0.45);
+}
+
+.libelle {
+  font: 400 22px/1 var(--font-display);
+  letter-spacing: -0.035em;
+  color: var(--nom-calme);
+}
+
+.marque {
+  margin-left: auto;
+  font: 400 9px var(--font-mono);
+  color: var(--acc);
+}
+
+.active {
+  background: var(--surf);
+}
+
+.active .numero {
+  color: var(--ink);
+}
+
+.active .libelle {
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--ink);
+}

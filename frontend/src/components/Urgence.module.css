@@ -1,0 +1,90 @@
+/* Système d'urgence « couleur » de la maquette : critique en rouge, 2-3 jours
+   en ambre, le reste en vert, et un gris neutre quand la date est inconnue. */
+
+[data-niveau='critique'] {
+  --couleur: var(--acc);
+}
+
+[data-niveau='attention'] {
+  --couleur: var(--attention);
+}
+
+[data-niveau='ok'] {
+  --couleur: var(--ok);
+}
+
+[data-niveau='inconnu'] {
+  --couleur: var(--inconnu);
+}
+
+.tranche {
+  flex: none;
+  width: 4px;
+  background: var(--couleur);
+}
+
+.tranche[data-niveau='inconnu'] {
+  background: var(--tranche-inconnu);
+}
+
+.echeance {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 118px;
+}
+
+.jeton {
+  font: 600 22px/0.9 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--couleur);
+  white-space: nowrap;
+}
+
+.grand {
+  font-size: 26px;
+}
+
+.legende {
+  font: 600 8.5px/1.25 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--muted);
+}
+
+.legende[data-niveau='critique'] {
+  color: var(--acc);
+}
+
+.graduations {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  --hauteur: 12px;
+  --largeur: 2.5px;
+  --trait: rgba(var(--ink-rgb), 0.55);
+}
+
+.graduations[data-niveau='critique'] {
+  --hauteur: 16px;
+  --largeur: 4px;
+  --trait: var(--acc);
+}
+
+.graduations[data-niveau='attention'] {
+  --hauteur: 14px;
+  --largeur: 3px;
+}
+
+.trait {
+  width: var(--largeur);
+  height: var(--hauteur);
+  background: var(--trait);
+}
+
+.trait.reserve {
+  background: var(--reserve);
+}

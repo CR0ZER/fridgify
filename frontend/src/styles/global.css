@@ -9,19 +9,12 @@
   padding: 0;
 }
 
-/* Le fond est porte par <html>, et par lui seul : il se propage au canvas et
-   couvre donc tout, zone de rebond et bandes sous les barres systeme comprises.
-   Il ne doit surtout pas etre double sur <body> : des que <html> a un fond,
-   celui de <body> cesse de se propager et se peint sur la boite de <body>,
-   c'est-a-dire *au-dessus* du degrade place en z-index: -1, qu'il masquerait. */
+/* Le fond est porte par <html> : il se propage au canvas et couvre donc la zone
+   de rebond et les bandes sous les barres systeme. */
 html {
-  background: var(--background);
+  background: var(--bg);
 }
 
-/* `height: 100%` figeait la hauteur sur le petit viewport iOS : des que le
-   contenu ne defilait pas, la page s'arretait avant le bas de l'ecran. On passe
-   sur une hauteur *minimale* exprimee en dvh, qui suit la barre d'outils
-   mobile, avec 100vh en repli pour les navigateurs sans dvh. */
 html,
 body,
 #root {
@@ -29,65 +22,89 @@ body,
   min-height: 100dvh;
 }
 
-/* Colonne flex pour que .page puisse occuper toute la hauteur restante
-   lorsqu'elle est courte, tout en s'etirant librement quand elle deborde. */
-#root {
-  display: flex;
-  flex-direction: column;
-}
-
 body {
-  color: var(--text-primary);
-  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Supprime le rebond elastique et le surlignage bleu au tap sous iOS. */
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-button {
+button,
+input,
+select,
+textarea {
   font: inherit;
   color: inherit;
   background: none;
   border: none;
+  border-radius: 0;
+}
+
+button {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
+button:disabled {
+  cursor: default;
+}
+
+/* 16px minimum : en dessous, Safari iOS zoome a la mise au point. */
 input,
+select,
 textarea {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  /* 16px minimum : en dessous, Safari iOS zoome automatiquement a la mise au point. */
   font-size: 16px;
 }
 
+select {
+  appearance: none;
+}
+
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--accent);
+button:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid var(--reserve);
   outline-offset: 2px;
 }
 
-textarea {
-  resize: vertical;
-}
-
-a {
-  color: var(--accent);
-}
-
-/* Les dates natives s'affichent en clair par defaut : on force le theme sombre. */
-input[type='date'] {
-  color-scheme: dark;
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--background);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+@keyframes fondu {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes monter {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes glisser {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+@keyframes pulsation {
+  50% {
+    opacity: 0.35;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

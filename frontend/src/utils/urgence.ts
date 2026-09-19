@@ -1,13 +1,14 @@
-export type NiveauUrgence = 'fresh' | 'warning' | 'critical'
+/**
+ * Trois niveaux d'urgence, plus l'absence de date.
+ *
+ * `inconnu` se distingue de `ok` à l'affichage (gris neutre plutôt que vert) :
+ * un produit sans DLC n'est pas pour autant un produit sain.
+ */
+export type Niveau = 'critique' | 'attention' | 'ok' | 'inconnu'
 
-export function urgenceLevel(jours: number | null): NiveauUrgence {
-  if (jours === null) return 'fresh'
-  if (jours <= 1) return 'critical'
-  if (jours <= 3) return 'warning'
-  return 'fresh'
-}
-
-/** Renvoie la variable CSS correspondante, utilisable en style inline. */
-export function couleurUrgence(niveau: NiveauUrgence): string {
-  return `var(--${niveau})`
+export function niveauUrgence(jours: number | null): Niveau {
+  if (jours === null) return 'inconnu'
+  if (jours <= 1) return 'critique'
+  if (jours <= 3) return 'attention'
+  return 'ok'
 }

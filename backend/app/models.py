@@ -152,6 +152,8 @@ class Plat(BaseModel):
     date_creation: str
     date_preparation: str | None = None
     lot_resultat: str | None = None
+    #: Portions creees par la preparation (lot_resultat), sorties comprises.
+    portions: int | None = None
     ingredients: list[IngredientDetaille] = Field(default_factory=list)
     #: DLC la plus proche parmi les ingredients : la date avant laquelle cuisiner.
     date_limite: str | None = None

@@ -6,11 +6,9 @@ import styles from './Modal.module.css'
  * Nombre de modales ouvertes simultanement.
  *
  * Sauvegarder puis restaurer `body.overflow` dans chaque modale ne tient pas
- * quand elles s'imbriquent — le detail d'un lot ouvre une confirmation — car
- * l'ordre des effets de React entre les deux composants n'est pas garanti et
- * l'une peut restaurer une valeur que l'autre venait de poser. Un simple
- * compteur rend l'operation commutative : le defilement revient exactement
- * quand la derniere modale se ferme.
+ * quand elles s'imbriquent, car l'ordre des effets de React entre deux
+ * composants n'est pas garanti. Un simple compteur rend l'operation
+ * commutative : le defilement revient exactement quand la derniere se ferme.
  */
 let modalesOuvertes = 0
 
@@ -35,12 +33,12 @@ type Props = {
   ouvert: boolean
   onClose: () => void
   children: ReactNode
-  /** Assombrit davantage le fond, pour les modales plein texte. */
-  dense?: boolean
+  /** `feuille` monte du bas de l'écran ; `centre` est une boîte de dialogue. */
+  forme?: 'feuille' | 'centre'
   labelledBy?: string
 }
 
-export default function Modal({ ouvert, onClose, children, dense, labelledBy }: Props) {
+export default function Modal({ ouvert, onClose, children, forme = 'feuille', labelledBy }: Props) {
   // Passe par une ref pour que l'effet ne depende que de `ouvert` : sans cela,
   // chaque rendu du parent recreerait `onClose` et relancerait le verrou.
   const fermeture = useRef(onClose)
@@ -65,7 +63,7 @@ export default function Modal({ ouvert, onClose, children, dense, labelledBy }: 
 
   return (
     <div
-      className={dense ? `${styles.backdrop} ${styles.dense}` : styles.backdrop}
+      className={`${styles.voile} ${styles[forme]}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}

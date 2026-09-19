@@ -7,7 +7,16 @@ l'architecture complète.
   les appels à Gemini vivent ici. Aucun secret ne doit descendre au navigateur.
 - **Frontend** — React 18 + TypeScript + Vite, dans `frontend/`. CSS Modules
   pour les styles propres à un composant, `src/styles/ui.css` pour ce qui se
-  répète. Le design system est dans `src/styles/theme.css`.
+  répète (boutons, champs, compteurs, étiquettes). Les couleurs ne vivent que
+  dans `src/styles/theme.css`, en variables : palette claire et palette sombre.
+  Ne jamais écrire une couleur en dur ailleurs, sinon l'un des deux thèmes casse.
+- **Design** — référence unique : la maquette Claude Design `Fridgify.dc.html`
+  et sa « Palette sombre ». Urgence en couleur (`components/Urgence.tsx`) : rouge
+  ≤ 1 jour, ambre 2-3 jours, vert au-delà, gris sans date. Polices Bricolage
+  Grotesque et Martian Mono, auto-hébergées dans `src/fonts/` (sous-ensemble
+  latin) pour rester disponibles hors ligne.
+- **Thème** — clair, sombre ou « selon le téléphone », choisi dans Réglages
+  (`utils/theme.ts`, dupliqué en ligne dans `index.html` pour éviter un flash).
 - **Interface et code en français** — libellés, noms de fonctions, commentaires
   et messages d'erreur, à l'image de l'existant.
 - **Catégories** — liste fermée dans `backend/app/categories.py`, source unique

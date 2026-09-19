@@ -1,236 +1,195 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { api } from '../api/client'
 import type { DisponibiliteLot } from '../api/types'
-import GlassCard from '../components/GlassCard'
-import Icon from '../components/Icon'
+import { Squelette } from '../components/EtatDonnees'
 import Stepper from '../components/Stepper'
-import { formatDateAffichage, joursRestants, libelleJours } from '../utils/date'
-import { couleurUrgence, urgenceLevel } from '../utils/urgence'
+import { dateCourte, jeton, joursRestants } from '../utils/date'
+import { niveauUrgence } from '../utils/urgence'
 import styles from './ComposerPlat.module.css'
 
 /** Sert à la fois à créer un plat et à modifier un plat déjà prévu. */
 export default function ComposerPlat() {
   const { platId } = useParams()
   const naviguer = useNavigate()
-  const enEdition = platId !== undefined
+  const retour = platId ? `/plats/${platId}` : '/plats'
 
   const [nom, setNom] = useState('')
   const [note, setNote] = useState('')
-  const [lots, setLots] = useState<DisponibiliteLot[]>([])
+  const [lots, setLots] = useState<DisponibiliteLot[] | null>(null)
   const [quantites, setQuantites] = useState<Record<string, number>>({})
-  const [chargement, setChargement] = useState(true)
   const [enregistrement, setEnregistrement] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
 
-  const charger = useCallback(async () => {
-    try {
-      const disponibilites = await api.disponibilites()
-
-      if (platId) {
+  useEffect(() => {
+    const charger = async () => {
+      try {
+        const disponibilites = await api.disponibilites()
+        if (!platId) {
+          setLots(disponibilites)
+          return
+        }
         const plat = await api.lirePlat(Number(platId))
         setNom(plat.nom)
         setNote(plat.note ?? '')
 
         // Un lot entièrement consommé depuis la création du plat a disparu des
-        // disponibilités. On l'écarte de la sélection : le laisser ferait
-        // échouer l'enregistrement sur un lot introuvable, sans que l'écran
-        // offre le moindre moyen de le retirer.
+        // disponibilités. On l'écarte : le garder ferait échouer
+        // l'enregistrement sur un lot introuvable, sans moyen de le retirer.
         const existants = new Set(disponibilites.map((lot) => lot.lot_id))
-        const encoreLa = plat.ingredients.filter((i) => existants.has(i.lot_id))
-
-        setQuantites(Object.fromEntries(encoreLa.map((i) => [i.lot_id, i.quantite])))
-
-        // Les quantités déjà réservées par ce plat lui restent accessibles :
-        // sans cela, rouvrir un plat afficherait ses propres ingrédients comme
-        // épuisés et interdirait d'en augmenter la part.
-        const sien = new Map(encoreLa.map((i) => [i.lot_id, i.quantite]))
-        setLots(
-          disponibilites.map((lot) => ({
-            ...lot,
-            disponible: lot.disponible + (sien.get(lot.lot_id) ?? 0),
-          })),
+        const sien = new Map(
+          plat.ingredients.filter((i) => existants.has(i.lot_id)).map((i) => [i.lot_id, i.quantite]),
         )
-      } else {
-        setLots(disponibilites)
+        setQuantites(Object.fromEntries(sien))
+        // Les quantités déjà réservées par ce plat lui restent accessibles :
+        // sans cela, ses propres ingrédients apparaîtraient épuisés.
+        setLots(
+          disponibilites.map((lot) => ({ ...lot, disponible: lot.disponible + (sien.get(lot.lot_id) ?? 0) })),
+        )
+      } catch (e) {
+        setErreur(e instanceof Error ? e.message : 'Chargement impossible.')
+        setLots((actuels) => actuels ?? [])
       }
-      setErreur(null)
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Chargement impossible.')
-    } finally {
-      setChargement(false)
     }
+    void charger()
   }, [platId])
 
-  useEffect(() => {
-    void charger()
-  }, [charger])
-
-  const selection = useMemo(
-    () => Object.entries(quantites).filter(([, q]) => q > 0),
-    [quantites],
-  )
+  const selection = useMemo(() => Object.entries(quantites).filter(([, q]) => q > 0), [quantites])
 
   /** Échéance du plat : la DLC la plus proche parmi les produits retenus. */
   const dateLimite = useMemo(() => {
     const dates = selection
-      .map(([lotId]) => lots.find((l) => l.lot_id === lotId)?.date_peremption_effective)
+      .map(([lotId]) => lots?.find((l) => l.lot_id === lotId)?.date_peremption_effective)
       .filter((d): d is string => !!d)
     return dates.length > 0 ? dates.reduce((a, b) => (a < b ? a : b)) : null
   }, [selection, lots])
 
+  const valide = !!nom.trim() && selection.length > 0
+
   const enregistrer = async (event: FormEvent) => {
     event.preventDefault()
-    if (!nom.trim() || selection.length === 0) return
-
+    if (!valide) return
     setEnregistrement(true)
     setErreur(null)
-
     const ingredients = selection.map(([lot_id, quantite]) => ({ lot_id, quantite }))
-
     try {
       if (platId) {
-        await api.modifierPlat(Number(platId), {
-          nom: nom.trim(),
-          note: note.trim() || null,
-          ingredients,
-        })
+        await api.modifierPlat(Number(platId), { nom: nom.trim(), note: note.trim() || null, ingredients })
       } else {
         await api.creerPlat(nom.trim(), note.trim() || null, ingredients)
       }
-      naviguer('/plats')
+      naviguer(retour)
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "L'enregistrement a échoué.")
       setEnregistrement(false)
     }
   }
 
+  if (!lots) return <Squelette />
+
   const joursLimite = joursRestants(dateLimite)
 
   return (
     <main className="page">
       <form onSubmit={enregistrer}>
-        <header className={styles.entete}>
-          <h1 className="titre-page" style={{ marginBottom: 0 }}>
-            {enEdition ? 'Modifier le plat' : 'Composer un plat'}
-          </h1>
-          <button
-            type="button"
-            className={styles.fermer}
-            onClick={() => naviguer('/plats')}
-            aria-label="Fermer"
-          >
-            <Icon nom="fermer" taille={24} />
+        <header className="entete-page" style={{ paddingTop: 2 }}>
+          <button type="button" className="retour" onClick={() => naviguer(retour)}>
+            ‹&nbsp; Plats
           </button>
+          <h1 className="titre-moyen">{platId ? 'Modifier le plat' : 'Nouveau plat'}</h1>
         </header>
 
-        <GlassCard className={styles.carte}>
-          <div className="pile">
-            <div>
-              <label className="label" htmlFor="nom-plat">
-                Nom du plat
-              </label>
-              <input
-                id="nom-plat"
-                className="input-texte"
-                value={nom}
-                onChange={(e) => setNom(e.target.value)}
-                placeholder="Ratatouille"
-                required
-                autoFocus={!enEdition}
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="note-plat">
-                Note (facultatif)
-              </label>
-              <input
-                id="note-plat"
-                className="input-texte"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Pour dimanche midi"
-              />
-            </div>
-          </div>
-        </GlassCard>
+        <div className={styles.champs}>
+          <label className="champ-etiquete">
+            <span className="etiquette">Nom du plat</span>
+            <input
+              className={`champ ${styles.nom}`}
+              value={nom}
+              onChange={(e) => setNom(e.target.value)}
+              maxLength={120}
+              required
+              autoFocus={!platId}
+            />
+          </label>
+          <label className="champ-etiquete">
+            <span className="etiquette">Note (facultative)</span>
+            <input
+              className={`champ ${styles.note}`}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Pour dimanche midi"
+            />
+          </label>
+        </div>
 
-        <GlassCard className={styles.carte}>
-          <h2 className="section-label">Produits à réserver</h2>
+        <div className={styles.titreIngredients}>
+          <h2 className="etiquette" style={{ fontSize: 9.5 }}>
+            Ingrédients
+          </h2>
+          <span
+            className={styles.limite}
+            style={{
+              color:
+                selection.length === 0
+                  ? 'var(--muted)'
+                  : niveauUrgence(joursLimite) === 'critique'
+                    ? 'var(--acc)'
+                    : 'var(--ink)',
+            }}
+          >
+            {selection.length === 0
+              ? 'Aucun ingrédient'
+              : dateLimite
+                ? `Date limite ${dateCourte(dateLimite)} · ${jeton(joursLimite)}`
+                : 'Sans date limite'}
+          </span>
+        </div>
 
-          {chargement && <div className="spinner" />}
+        {lots.length === 0 && (
+          <p className="texte-aide" style={{ padding: '0 20px' }}>
+            Le frigo est vide. Ajoutez des produits avant de composer un plat.
+          </p>
+        )}
 
-          {!chargement && lots.length === 0 && (
-            <p className={styles.vide}>
-              Le frigo est vide. Ajoutez des produits avant de composer un plat.
-            </p>
-          )}
-
-          {lots.map((lot) => {
-            const jours = joursRestants(lot.date_peremption_effective)
-            const couleur = couleurUrgence(urgenceLevel(jours))
-            const retenu = quantites[lot.lot_id] ?? 0
-            const epuise = lot.disponible <= 0 && retenu <= 0
-
-            return (
-              <div
-                key={lot.lot_id}
-                className={epuise ? `${styles.produit} ${styles.epuise}` : styles.produit}
-              >
-                <div className={styles.produitInfos}>
-                  <span className={styles.produitNom}>{lot.nom}</span>
-                  <span className={styles.produitMeta}>
-                    <span className={styles.jours} style={{ color: couleur }}>
-                      {libelleJours(jours)}
-                    </span>
-                    <span>·</span>
-                    <span>
-                      {epuise
-                        ? 'déjà tout réservé'
-                        : `${lot.disponible} disponible${lot.disponible > 1 ? 's' : ''}`}
-                    </span>
-                  </span>
-                </div>
+        {lots.map((lot) => {
+          const retenu = quantites[lot.lot_id] ?? 0
+          const epuise = lot.disponible <= 0 && retenu === 0
+          return (
+            <div
+              key={lot.lot_id}
+              className={styles.lot}
+              data-retenu={retenu > 0}
+              data-epuise={epuise}
+            >
+              <div className={styles.lotTextes}>
+                <span className={styles.lotNom}>{lot.nom}</span>
+                <span className={styles.lotStock}>
+                  {epuise
+                    ? 'déjà tout réservé'
+                    : `${lot.disponible} disponible${lot.disponible > 1 ? 's' : ''} sur ${lot.stock}`}
+                </span>
+              </div>
+              {!epuise && (
                 <Stepper
                   valeur={retenu}
                   max={lot.disponible}
                   label={lot.nom}
-                  onChange={(valeur) =>
-                    setQuantites((actuelles) => ({ ...actuelles, [lot.lot_id]: valeur }))
-                  }
+                  onChange={(valeur) => setQuantites((actuelles) => ({ ...actuelles, [lot.lot_id]: valeur }))}
                 />
-              </div>
-            )
-          })}
-        </GlassCard>
+              )}
+            </div>
+          )
+        })}
 
         {erreur && <p className="erreur">{erreur}</p>}
 
-        <div className={styles.recap}>
-          <p className={styles.recapLigne}>
-            <span>Produits retenus</span>
-            <span className={styles.recapValeur}>{selection.length}</span>
-          </p>
-          <p className={styles.recapLigne}>
-            <span>À cuisiner avant</span>
-            <span
-              className={styles.limite}
-              style={{ color: dateLimite ? couleurUrgence(urgenceLevel(joursLimite)) : undefined }}
-            >
-              {dateLimite ? `${formatDateAffichage(dateLimite)} · ${libelleJours(joursLimite)}` : '—'}
-            </span>
-          </p>
-          <button
-            type="submit"
-            className="btn btn-primaire"
-            disabled={enregistrement || !nom.trim() || selection.length === 0}
-          >
-            {enregistrement
-              ? 'Enregistrement…'
-              : enEdition
-                ? 'Enregistrer les modifications'
-                : 'Créer le plat'}
+        <div className={`duo ${styles.actions}`}>
+          <button type="button" className="btn" onClick={() => naviguer(retour)}>
+            Annuler
+          </button>
+          <button type="submit" className={`btn btn-plein ${styles.valider}`} disabled={enregistrement || !valide}>
+            {enregistrement ? 'Enregistrement…' : platId ? 'Enregistrer' : 'Créer le plat'}
           </button>
         </div>
       </form>

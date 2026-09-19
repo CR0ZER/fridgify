@@ -176,3 +176,24 @@ def test_plats_tries_du_plus_urgent_au_moins_urgent(client, creer_lot):
     _plat(client, "Plat urgent", [{"lot_id": tot, "quantite": 1}])
 
     assert [p["nom"] for p in client.get("/api/plats").json()] == ["Plat urgent", "Plat lointain"]
+
+
+def test_plat_prepare_garde_le_nom_de_ses_ingredients(client, creer_lot):
+    """Un lot entierement consomme par la preparation quitte le stock, pas l'historique."""
+    lot = creer_lot("Courgettes", count=2)
+    plat = _plat(client, "Ratatouille", [{"lot_id": lot, "quantite": 2}]).json()
+    client.post(f"/api/plats/{plat['id']}/preparer", json={"portions": 3})
+
+    prepare = client.get(f"/api/plats/{plat['id']}").json()
+    assert [i["nom"] for i in prepare["ingredients"]] == ["Courgettes"]
+    assert prepare["portions"] == 3
+
+    # Les portions mangees restent comptees : c'est ce que la preparation a produit.
+    portion = next(p for p in client.get("/api/produits").json() if p["nom"] == "Ratatouille")
+    client.post(f"/api/produits/{portion['id']}/statut", json={"statut": "consomme"})
+    assert client.get(f"/api/plats/{plat['id']}").json()["portions"] == 3
+
+
+def test_plat_prevu_sans_portions(client, creer_lot):
+    lot = creer_lot("Tomates")
+    assert _plat(client, "Salade", [{"lot_id": lot, "quantite": 1}]).json()["portions"] is None

@@ -1,135 +1,345 @@
-/* Classes partagees par les ecrans. Les modules CSS ne couvrent que la mise en
-   page propre a chaque composant ; tout ce qui se repete vit ici. */
+/* Vocabulaire partagé par les écrans : étiquettes industrielles en Martian
+   Mono, titres en Bricolage Grotesque, arêtes vives, filets fins. Les modules
+   CSS ne couvrent que la mise en page propre à chaque écran. */
 
 .page {
-  /* Occupe toute la hauteur restante de #root, sans empecher le debordement
-     quand le contenu est plus long que l'ecran. */
-  flex: 1;
   width: 100%;
-  padding: calc(var(--safe-top) + var(--space-lg)) var(--space-md) var(--tabbar-space);
-  max-width: 620px;
+  max-width: 560px;
   margin: 0 auto;
+  padding-top: var(--safe-top);
+  padding-bottom: calc(var(--barre-nav) + var(--safe-bottom) + 36px);
+  animation: glisser 0.2s ease-out;
 }
 
-.titre-page {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 25px;
-  color: var(--text-primary);
-  margin-bottom: var(--space-md);
+.barre-etat {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: var(--safe-top);
+  background: var(--bg);
 }
 
-.section-label {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin-bottom: var(--space-sm);
+/* En-tête collant d'un écran de détail ou de la barre de filtres : il se cale
+   sous la barre d'état plutôt que sous le bord de l'écran. */
+.collant {
+  position: sticky;
+  top: var(--safe-top);
+  z-index: 30;
+  background: var(--bg);
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.12);
 }
 
-.label {
-  display: block;
-  font-family: var(--font-body);
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-xs);
-}
-
-.input-texte {
-  width: 100%;
-  font-family: var(--font-body);
-  color: var(--text-primary);
-  border: 1px solid var(--surface-border);
-  border-radius: 10px;
-  padding: 10px var(--space-sm);
+/* Retour « ‹ Frigo » en tête d'un écran de détail. */
+.retour {
   min-height: 44px;
-  background: rgba(10, 14, 26, 0.4);
+  padding: 0;
+  font: 600 10px/1 var(--font-mono);
+  letter-spacing: 0.13em;
+  color: var(--ink);
+  text-transform: uppercase;
 }
 
-.input-texte::placeholder {
-  color: var(--text-secondary);
+/* En-tête d'écran : numéro de section puis grand titre. */
+.entete-page {
+  padding: 10px 20px 14px;
 }
 
-.input-mono {
-  font-family: var(--font-mono);
+.kicker {
+  font: 600 9px/1 var(--font-mono);
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
 }
+
+.titre {
+  margin-top: 8px;
+  font: 800 38px/0.92 var(--font-display);
+  letter-spacing: -0.045em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.titre-moyen {
+  font: 800 32px/0.95 var(--font-display);
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Intertitre de liste : « À préparer (3) », « Dernières sorties »… */
+.intertitre {
+  padding: 22px 20px 8px;
+  font: 600 9.5px/1.3 var(--font-mono);
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.etiquette {
+  font: 600 9px/1.3 var(--font-mono);
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.meta {
+  font: 500 9.5px/1.5 var(--font-mono);
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.texte-aide {
+  font: 400 13px/1.5 var(--font-display);
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* ---- Boutons ---------------------------------------------------------- */
 
 .btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 15px;
-  padding: 15px var(--space-md);
+  gap: 8px;
   min-height: 48px;
-  width: 100%;
-  transition: transform 80ms ease, opacity 120ms ease;
+  padding: 0 16px;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  font: 600 10px/1.2 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
 }
 
-.btn:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primaire {
-  background: var(--accent);
-  color: var(--background);
-}
-
-.btn-secondaire {
-  border: 1px solid var(--surface-border);
-  color: var(--text-secondary);
+.btn-plein {
+  background: var(--ink);
+  color: var(--bg);
 }
 
 .btn-danger {
-  border: 1px solid var(--critical);
-  color: var(--critical);
-  font-size: 13px;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-plein-danger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.btn-discret {
+  border-color: rgba(var(--ink-rgb), 0.28);
+  color: var(--muted);
+}
+
+.btn-grand {
+  min-height: 52px;
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+}
+
+.btn:disabled {
+  border-color: rgba(var(--ink-rgb), 0.25);
+  background: transparent;
+  color: rgba(var(--ink-rgb), 0.4);
+}
+
+.btn-lien {
   min-height: 44px;
-  padding: 12px var(--space-md);
+  padding: 0;
+  font: 600 9.5px/1 var(--font-mono);
+  letter-spacing: 0.13em;
+  color: var(--ink);
+  text-transform: uppercase;
 }
 
-.erreur {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--critical);
-  margin-top: var(--space-lg);
-  text-align: center;
-  line-height: 1.5;
+/* Boutons accolés : un seul filet entre deux voisins. */
+.duo {
+  display: flex;
 }
 
-.vide {
-  text-align: center;
-  margin-top: 40px;
-  color: var(--text-secondary);
-  font-family: var(--font-body);
+.duo > * {
+  flex: 1;
 }
 
-.pile {
+.duo > * + * {
+  border-left: none;
+}
+
+/* ---- Champs ----------------------------------------------------------- */
+
+.champ {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  padding: 0 13px;
+  border: 1.5px solid var(--ink);
+  background: var(--surf);
+  font: 600 16px var(--font-display);
+  color: var(--ink);
+}
+
+.champ-mono {
+  font: 600 15px var(--font-mono);
+}
+
+textarea.champ {
+  padding: 12px;
+  font: 400 12px/1.6 var(--font-mono);
+  resize: vertical;
+}
+
+.champ::placeholder {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Champ étiqueté, empilé : libellé puis champ. */
+.champ-etiquete {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 7px;
 }
 
-.ligne {
+/* ---- Compteur − / + --------------------------------------------------- */
+
+.stepper {
   display: flex;
-  gap: var(--space-sm);
-  /* Si les deux colonnes ne tiennent pas cote a cote, elles s'empilent au lieu
-     de deborder : un champ ne peut plus en recouvrir un autre, quelle que soit
-     la largeur minimale que le navigateur impose a ses controles natifs. */
-  flex-wrap: wrap;
+  align-items: stretch;
+  flex: none;
+  border: 1.5px solid var(--ink);
 }
 
-.ligne > * {
-  flex: 1 1 140px;
-  min-width: 0;
+.stepper button {
+  width: 40px;
+  min-height: 42px;
+  font: 400 17px/1 var(--font-display);
+  color: var(--ink);
+}
+
+.stepper button:first-child {
+  border-right: 1.5px solid var(--ink);
+}
+
+.stepper button:last-child {
+  border-left: 1.5px solid var(--ink);
+}
+
+.stepper button:disabled {
+  color: rgba(var(--ink-rgb), 0.3);
+}
+
+.stepper output {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  font: 700 15px var(--font-mono);
+  color: var(--ink);
+}
+
+.stepper .zero {
+  color: rgba(var(--ink-rgb), 0.35);
+}
+
+/* ---- Interrupteur ----------------------------------------------------- */
+
+.interrupteur {
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: 46px;
+  height: 27px;
+  padding: 2px;
+  border: 1px solid var(--ink);
+}
+
+.interrupteur::after {
+  content: '';
+  width: 19px;
+  height: 19px;
+  background: var(--ink);
+}
+
+.interrupteur[aria-checked='true'] {
+  justify-content: flex-end;
+  background: var(--ink);
+}
+
+.interrupteur[aria-checked='true']::after {
+  background: var(--bg);
+}
+
+.interrupteur:disabled {
+  border-color: rgba(var(--ink-rgb), 0.3);
+}
+
+.interrupteur:disabled::after {
+  background: rgba(var(--ink-rgb), 0.3);
+}
+
+/* ---- Blocs ------------------------------------------------------------ */
+
+/* État vide d'une liste. */
+.vide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 50px 34px;
+}
+
+.vide-cadre {
+  width: 100%;
+  height: 80px;
+  border: 2px dashed rgba(var(--ink-rgb), 0.22);
+}
+
+.vide-titre {
+  font: 800 25px/1.06 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/* Étiquette encadrée : statut, réservation, badge. */
+.pastille {
+  flex: 0 1 auto;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  align-self: flex-start;
+  padding: 4px 7px;
+  border: 1px solid currentColor;
+  font: 600 9px/1.3 var(--font-mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+/* Message d'erreur serveur, en filet rouge. */
+.erreur {
+  margin: 12px 20px;
+  padding: 10px 0 10px 12px;
+  border-left: 4px solid var(--danger);
+  font: 500 11.5px/1.5 var(--font-mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Encadré plein : « Ce qui va se passer », « Activation impossible »… */
+.encadre {
+  border: 1.5px solid var(--ink);
+  background: var(--surf);
+}
+
+.encadre-titre {
+  padding: 11px 14px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 700 9.5px/1.3 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }

@@ -28,7 +28,7 @@ export default defineConfig(() => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+        includeAssets: ['favicon-*.png', 'apple-touch-icon-*.png'],
         manifest: {
           name: 'Fridgify',
           short_name: 'Fridgify',
@@ -38,8 +38,8 @@ export default defineConfig(() => {
           scope: '/',
           display: 'standalone',
           orientation: 'portrait',
-          background_color: '#0A0E1A',
-          theme_color: '#0A0E1A',
+          background_color: '#16191a',
+          theme_color: '#16191a',
           icons: [
             { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
             { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

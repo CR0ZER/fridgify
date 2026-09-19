@@ -1,40 +1,37 @@
-import Icon from './Icon'
-import styles from './Stepper.module.css'
-
 type Props = {
   valeur: number
+  min?: number
   max: number
-  pas?: number
   onChange: (valeur: number) => void
+  /** Ce que l'on compte, pour les lecteurs d'écran : « Tomates », « portion »… */
   label: string
+  className?: string
 }
 
-export default function Stepper({ valeur, max, pas = 1, onChange, label }: Props) {
-  // Une unite est indivisible : on ne compte qu'en entiers, bornes comprises.
-  const cadrer = (v: number) => Math.round(Math.min(Math.max(v, 0), max))
+/** Compteur − / + en entiers bornés : une unité est indivisible. */
+export default function Stepper({ valeur, min = 0, max, onChange, label, className }: Props) {
+  const cadrer = (v: number) => Math.min(Math.max(v, min), max)
 
   return (
-    <div className={valeur > 0 ? `${styles.stepper} ${styles.actif}` : styles.stepper}>
+    <div className={className ? `stepper ${className}` : 'stepper'}>
       <button
         type="button"
-        className={styles.bouton}
-        onClick={() => onChange(cadrer(valeur - pas))}
-        disabled={valeur <= 0}
+        onClick={() => onChange(cadrer(valeur - 1))}
+        disabled={valeur <= min}
         aria-label={`Retirer ${label}`}
       >
-        <Icon nom="moins" taille={18} epaisseur={2.2} />
+        −
       </button>
-      <span className={styles.valeur} aria-live="polite">
+      <output className={valeur === 0 ? 'zero' : undefined} aria-live="polite">
         {valeur}
-      </span>
+      </output>
       <button
         type="button"
-        className={styles.bouton}
-        onClick={() => onChange(cadrer(valeur + pas))}
+        onClick={() => onChange(cadrer(valeur + 1))}
         disabled={valeur >= max}
         aria-label={`Ajouter ${label}`}
       >
-        <Icon nom="plus" taille={18} epaisseur={2.2} />
+        +
       </button>
     </div>
   )

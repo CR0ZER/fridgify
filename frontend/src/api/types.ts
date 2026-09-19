@@ -85,6 +85,8 @@ export type Plat = {
   date_creation: string
   date_preparation: string | null
   lot_resultat: string | null
+  /** Portions créées par la préparation, sorties du frigo comprises. */
+  portions: number | null
   ingredients: IngredientDetaille[]
   /** DLC la plus proche parmi les ingrédients : la date avant laquelle cuisiner. */
   date_limite: string | null

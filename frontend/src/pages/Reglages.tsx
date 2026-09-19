@@ -1,182 +1,191 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 
 import { api, type Health } from '../api/client'
 import { CLE_PROMPT_SCAN } from '../api/types'
+import { numeroSection } from '../components/BarreNavigation'
 import { useConfirm } from '../components/ConfirmDialog'
-import GlassCard from '../components/GlassCard'
-import Icon from '../components/Icon'
 import NotificationsPeremption from '../components/NotificationsPeremption'
-import PromptEditorModal from '../components/PromptEditorModal'
-import StatusDot from '../components/StatusDot'
+import { choisirTheme, lirePreference, type PreferenceTheme } from '../utils/theme'
 import styles from './Reglages.module.css'
 
-type PromptEnEdition = { cle: string; titre: string; valeur: string; defaut: string }
+const THEMES: [PreferenceTheme, string][] = [
+  ['auto', 'Téléphone'],
+  ['clair', 'Clair'],
+  ['sombre', 'Sombre'],
+]
 
 export default function Reglages() {
-  const [defauts, setDefauts] = useState<Record<string, string>>({})
   const [sante, setSante] = useState<Health | null>(null)
-  const [edition, setEdition] = useState<PromptEnEdition | null>(null)
+  const [theme, setTheme] = useState(lirePreference)
+  const [promptOuvert, setPromptOuvert] = useState(false)
+  const [prompt, setPrompt] = useState('')
+  const [promptDefaut, setPromptDefaut] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const { confirmer, dialogue } = useConfirm()
-  const naviguer = useNavigate()
 
-  const charger = useCallback(async () => {
-    try {
-      const [reglages, etat] = await Promise.all([api.reglagesParDefaut(), api.health()])
-      setDefauts(reglages)
-      setSante(etat)
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Chargement impossible.')
-    }
-  }, [])
+  const signaler = (e: unknown, repli: string) => setErreur(e instanceof Error ? e.message : repli)
 
   useEffect(() => {
-    void charger()
-  }, [charger])
+    // Sans réponse, l'API est injoignable : le diagnostic le dit tel quel.
+    api.health().then(setSante).catch(() => setSante(null))
+  }, [])
 
-  const ouvrirPrompt = async (cle: string, titre: string) => {
+  const changerTheme = (preference: PreferenceTheme) => {
+    choisirTheme(preference)
+    setTheme(preference)
+  }
+
+  const basculerPrompt = async () => {
+    if (promptOuvert) {
+      setPromptOuvert(false)
+      return
+    }
     try {
-      const { value } = await api.lireReglage(cle)
-      setEdition({ cle, titre, valeur: value ?? defauts[cle] ?? '', defaut: defauts[cle] ?? '' })
+      const [{ value }, defauts] = await Promise.all([api.lireReglage(CLE_PROMPT_SCAN), api.reglagesParDefaut()])
+      setPromptDefaut(defauts[CLE_PROMPT_SCAN] ?? '')
+      setPrompt(value ?? defauts[CLE_PROMPT_SCAN] ?? '')
+      setPromptOuvert(true)
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Lecture impossible.')
+      signaler(e, 'Lecture impossible.')
+    }
+  }
+
+  const enregistrerPrompt = async () => {
+    try {
+      await api.ecrireReglage(CLE_PROMPT_SCAN, prompt)
+      setPromptOuvert(false)
+      setMessage('Prompt enregistré.')
+    } catch (e) {
+      signaler(e, 'Enregistrement impossible.')
+    }
+  }
+
+  const reinitialiserPrompt = async () => {
+    try {
+      await api.reinitialiserReglage(CLE_PROMPT_SCAN)
+      setPrompt(promptDefaut)
+      setMessage('Prompt par défaut rétabli.')
+    } catch (e) {
+      signaler(e, 'Réinitialisation impossible.')
     }
   }
 
   const viderFrigo = async () => {
     const accepte = await confirmer({
-      titre: 'Vider le frigo',
-      message:
-        'Ceci supprime tous les produits enregistrés, historique et statistiques compris. Action irréversible.',
-      action: 'Supprimer tout',
+      titre: 'Confirmer — vider le frigo',
+      message: 'Tous les produits et tout l’historique seront supprimés. Cette action est irréversible.',
+      action: 'Tout supprimer',
       destructif: true,
     })
     if (!accepte) return
-
     try {
       await api.viderFrigo()
       setMessage('Inventaire vidé.')
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Suppression impossible.')
+      signaler(e, 'Suppression impossible.')
     }
   }
 
+  const diagnostic: [string, boolean][] = [
+    ['API joignable', sante !== null],
+    ['Clé IA configurée', !!sante?.gemini_configure],
+    ['Clés de notification configurées', !!sante?.push_configure],
+    ['Authentification active', !!sante?.auth_active],
+  ]
+
   return (
     <main className="page">
-      <header className={styles.entete}>
-        <button
-          type="button"
-          className={styles.retour}
-          onClick={() => naviguer('/')}
-          aria-label="Retour à l'inventaire"
-        >
-          <Icon nom="retour" taille={24} />
-        </button>
-        <h1 className="titre-page" style={{ marginBottom: 0 }}>
-          Réglages
-        </h1>
+      <header className="entete-page">
+        <p className="kicker">{numeroSection('/reglages')} · Réglages</p>
+        <h1 className="titre">Réglages</h1>
       </header>
 
-      <GlassCard className={styles.carte}>
-        <h2 className="section-label">Prompt personnalisé</h2>
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.boutonPrompt}
-            onClick={() => ouvrirPrompt(CLE_PROMPT_SCAN, 'Prompt — Scan de ticket')}
-          >
-            Modifier le prompt de scan
-          </button>
-        </div>
-        <p className={styles.aide}>
-          Le prompt est enregistré sur la Raspberry, donc partagé par tous vos appareils.
-        </p>
-      </GlassCard>
+      {erreur && <p className="erreur">{erreur}</p>}
+      {message && <p className={styles.message}>{message}</p>}
 
+      <h2 className="intertitre" style={{ paddingTop: 8 }}>
+        Notifications de péremption
+      </h2>
       <NotificationsPeremption onErreur={setErreur} />
 
-      <GlassCard className={styles.carte}>
-        <h2 className="section-label">Serveur</h2>
-        <div className={styles.diagnostic}>
-          <span>Connexion à l'API</span>
-          <span className={styles.valeur}>
-            <StatusDot couleur={sante ? 'var(--fresh)' : 'var(--critical)'} taille={8} />
-            {sante ? 'établie' : 'indisponible'}
-          </span>
-        </div>
-        <div className={styles.diagnostic}>
-          <span>Clé Gemini</span>
-          <span className={styles.valeur}>
-            <StatusDot
-              couleur={sante?.gemini_configure ? 'var(--fresh)' : 'var(--warning)'}
-              taille={8}
-            />
-            {sante?.gemini_configure ? 'configurée' : 'absente'}
-          </span>
-        </div>
-        <div className={styles.diagnostic}>
-          <span>Clés de notification</span>
-          <span className={styles.valeur}>
-            <StatusDot
-              couleur={sante?.push_configure ? 'var(--fresh)' : 'var(--warning)'}
-              taille={8}
-            />
-            {sante?.push_configure ? 'configurées' : 'absentes'}
-          </span>
-        </div>
-        <div className={styles.diagnostic}>
-          <span>Authentification API</span>
-          <span className={styles.valeur}>
-            <StatusDot
-              couleur={sante?.auth_active ? 'var(--fresh)' : 'var(--warning)'}
-              taille={8}
-            />
-            {sante?.auth_active ? 'active' : 'désactivée'}
-          </span>
-        </div>
-        <p className={styles.aide}>
-          Le modèle utilisé pour le scan se règle côté serveur, dans{' '}
-          <code>backend/.env</code>.
-        </p>
-      </GlassCard>
+      <h2 className="intertitre" style={{ paddingTop: 28 }}>
+        Apparence
+      </h2>
+      <div className={styles.themes} role="radiogroup" aria-label="Thème">
+        {THEMES.map(([valeur, libelle]) => (
+          <button
+            key={valeur}
+            type="button"
+            role="radio"
+            aria-checked={theme === valeur}
+            onClick={() => changerTheme(valeur)}
+          >
+            {libelle}
+          </button>
+        ))}
+      </div>
+      <p className={styles.aide}>
+        {theme === 'auto'
+          ? 'Suit le mode clair ou sombre du téléphone.'
+          : `Toujours ${theme}, quel que soit le réglage du téléphone.`}{' '}
+        L'icône de l'écran d'accueil prend la couleur du thème au moment de l'installation.
+      </p>
 
-      <GlassCard className={styles.carte}>
-        <h2 className="section-label">Données</h2>
+      <h2 className="intertitre" style={{ paddingTop: 28 }}>
+        Diagnostic serveur
+      </h2>
+      {diagnostic.map(([libelle, ok]) => (
+        <div key={libelle} className={styles.diagnostic}>
+          <span>{libelle}</span>
+          <span className={ok ? styles.oui : styles.non}>{ok ? 'Oui' : 'Non'}</span>
+        </div>
+      ))}
+
+      <div className={styles.titrePrompt}>
+        <h2 className="etiquette" style={{ fontSize: 9.5 }}>
+          Prompt de scan
+        </h2>
+        <button type="button" className="btn-lien" onClick={basculerPrompt} aria-expanded={promptOuvert}>
+          {promptOuvert ? 'Replier' : 'Afficher'}
+        </button>
+      </div>
+      {promptOuvert && (
+        <div className={styles.prompt}>
+          <p className={styles.aide} style={{ padding: 0 }}>
+            Réglage avancé. Ce texte est envoyé à l'IA avec la photo du ticket. Il est enregistré sur
+            la Raspberry, donc partagé par tous vos appareils.
+          </p>
+          <textarea
+            className="champ"
+            rows={9}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            aria-label="Prompt de scan"
+          />
+          <div className="duo">
+            <button type="button" className="btn" onClick={reinitialiserPrompt}>
+              Texte par défaut
+            </button>
+            <button type="button" className="btn btn-plein" onClick={enregistrerPrompt}>
+              Enregistrer
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={styles.danger}>
+        <h2 className="etiquette" style={{ fontSize: 9.5, color: 'var(--danger)' }}>
+          Zone dangereuse
+        </h2>
         <button type="button" className="btn btn-danger" onClick={viderFrigo}>
           Vider le frigo
         </button>
-        {message && <p className={styles.aide}>{message}</p>}
-      </GlassCard>
+        <p className={styles.aide} style={{ padding: 0 }}>
+          Supprime tous les produits et l'historique. Irréversible.
+        </p>
+      </div>
 
-      {erreur && <p className="erreur">{erreur}</p>}
-
-      <PromptEditorModal
-        ouvert={edition !== null}
-        titre={edition?.titre ?? ''}
-        valeurCourante={edition?.valeur ?? ''}
-        valeurParDefaut={edition?.defaut ?? ''}
-        onClose={() => setEdition(null)}
-        onSave={async (valeur) => {
-          if (!edition) return
-          try {
-            await api.ecrireReglage(edition.cle, valeur)
-            setEdition(null)
-            setMessage('Prompt enregistré.')
-          } catch (e) {
-            setErreur(e instanceof Error ? e.message : 'Enregistrement impossible.')
-          }
-        }}
-        onReset={async () => {
-          if (!edition) return
-          try {
-            await api.reinitialiserReglage(edition.cle)
-          } catch (e) {
-            setErreur(e instanceof Error ? e.message : 'Réinitialisation impossible.')
-          }
-        }}
-      />
       {dialogue}
     </main>
   )

@@ -1,0 +1,63 @@
+.champs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 20px;
+}
+
+.portions button {
+  width: 52px;
+  min-height: 50px;
+  font-size: 20px;
+}
+
+.portions output {
+  flex: 1;
+  background: var(--surf);
+  font-size: 19px;
+}
+
+.aide {
+  font: 400 11px var(--font-display);
+  color: var(--muted);
+}
+
+.bilan {
+  margin: 22px 20px 0;
+}
+
+.bilanCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 15px 14px;
+}
+
+.bilanCorps p {
+  display: flex;
+  gap: 10px;
+  font: 400 13px/1.5 var(--font-display);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.bilanCorps p::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 7px;
+  background: var(--ink);
+}
+
+.actions {
+  padding: 20px 20px 30px;
+}
+
+.actions :global(.btn) {
+  min-height: 52px;
+}
+
+.valider {
+  flex: 1.6;
+}

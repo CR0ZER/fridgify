@@ -1,0 +1,75 @@
+.entete {
+  padding: 2px 20px 12px;
+}
+
+.nom {
+  font: 600 30px/1.12 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.limite {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 9px;
+}
+
+.note {
+  margin: 14px 20px 0;
+  padding: 6px 0 6px 12px;
+  border-left: 4px solid rgba(var(--ink-rgb), 0.3);
+  font: 400 13px/1.5 var(--font-display);
+  color: var(--ink);
+}
+
+.ingredient {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px 13px 14px;
+  border-left: 6px solid transparent;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.08);
+  background: var(--surf);
+}
+
+.manque {
+  border-left-color: var(--acc);
+}
+
+.ingredientTextes {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ingredientNom {
+  font: 600 16px/1.15 var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.quantite {
+  flex: none;
+  font: 700 18px var(--font-mono);
+  color: var(--ink);
+}
+
+.alerte {
+  margin: 10px 20px 0;
+  padding: 12px 13px;
+  border: 1.5px solid var(--danger);
+  font: 400 12.5px/1.5 var(--font-display);
+  color: var(--ink);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+}

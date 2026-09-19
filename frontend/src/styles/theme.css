@@ -1,35 +1,95 @@
-/* Design system porte depuis constants/theme.ts de l'application Expo. */
+/* Design system Fridgify — maquette Claude Design « Fridgify.dc.html ».
+   Deux palettes : émail de frigo (clair) et nuit de frigo (sombre). Tout le
+   reste de l'interface ne lit que ces variables.
+
+   Le thème suit le téléphone par défaut ; `data-theme` sur <html>, posé par
+   utils/theme.ts, force l'un ou l'autre depuis les réglages. */
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  /* Fichier à axe optique : les titres de 38 px et les libellés de 15 px
+     n'ont pas le même dessin, comme dans la maquette. */
+  src: url('../fonts/bricolage-grotesque.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Martian Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('../fonts/martian-mono.woff2') format('woff2-variations');
+}
+
 :root {
-  --background: #0a0e1a;
-  --blob-blue: #3e63ff;
-  --blob-purple: #8b5cf6;
-  --surface: #151a2e;
-  --surface-border: rgba(255, 255, 255, 0.13);
-  --text-primary: #f2f5fa;
-  --text-secondary: #8791a8;
-  --fresh: #35d399;
-  --warning: #f5b84c;
-  --critical: #f2726b;
-  --accent: #7c93ff;
+  color-scheme: light;
 
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --bg: #e4e9e3;
+  --surf: #f1f4ef;
+  --ink: #1b211f;
+  /* Composantes de --ink, pour les filets et voiles translucides. */
+  --ink-rgb: 27, 33, 31;
+  --muted: #565f59;
+  --texte-doux: #4a534d;
+  --nom-calme: #2e3631;
 
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
+  /* Rouge des actions destructives, et accent de l'urgence critique. */
+  --danger: #c2401f;
+  --acc: #a8321a;
+  --attention: #8a6608;
+  --ok: #2f6b47;
+  --inconnu: #6f7872;
+  --tranche-inconnu: #9aa39d;
+  /* Unités réservées pour un plat. */
+  --reserve: #2a6398;
 
-  --radius-card: 24px;
-  --radius-button: 14px;
-  --radius-pill: 999px;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-mono: 'Martian Mono', ui-monospace, monospace;
 
-  /* Encoches et barre home de l'iPhone, exposees par viewport-fit=cover. */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Hauteur de la barre de navigation basse, hors zone du geste d'accueil. */
+  --barre-nav: 62px;
+}
 
-  /* Hauteur reservee sous le contenu pour la barre d'onglets flottante. */
-  --tabbar-space: calc(120px + var(--safe-bottom));
+/* Palette sombre, appliquée quand le téléphone est en mode sombre et que
+   l'utilisateur n'a pas forcé le clair — ou quand il a forcé le sombre. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='clair']) {
+    color-scheme: dark;
+    --bg: #16191a;
+    --surf: #1e2223;
+    --ink: #e8edeb;
+    --ink-rgb: 232, 237, 235;
+    --muted: #98a3a1;
+    --texte-doux: #b3bcba;
+    --nom-calme: #cfd6d4;
+    --danger: #f2693c;
+    --acc: #f2693c;
+    --attention: #e0a72e;
+    --ok: #5fae82;
+    --inconnu: #8b9694;
+    --tranche-inconnu: #8b9694;
+    --reserve: #6aa5dd;
+  }
+}
+
+:root[data-theme='sombre'] {
+  color-scheme: dark;
+  --bg: #16191a;
+  --surf: #1e2223;
+  --ink: #e8edeb;
+  --ink-rgb: 232, 237, 235;
+  --muted: #98a3a1;
+  --texte-doux: #b3bcba;
+  --nom-calme: #cfd6d4;
+  --danger: #f2693c;
+  --acc: #f2693c;
+  --attention: #e0a72e;
+  --ok: #5fae82;
+  --inconnu: #8b9694;
+  --tranche-inconnu: #8b9694;
+  --reserve: #6aa5dd;
 }

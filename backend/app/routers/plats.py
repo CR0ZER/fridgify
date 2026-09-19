@@ -123,7 +123,7 @@ def _composer(db: sqlite3.Connection, ligne: sqlite3.Row, stock: dict[str, dict]
             IngredientDetaille(
                 lot_id=reserve["lot_id"],
                 quantite=int(reserve["quantite"]),
-                nom=lot["nom"] if lot else "Produit retiré du frigo",
+                nom=lot["nom"] if lot else _nom_historique(db, reserve["lot_id"]),
                 categorie=lot["categorie"] if lot else None,
                 date_peremption_effective=lot["dlc"] if lot else None,
                 stock=disponible,
@@ -141,11 +141,35 @@ def _composer(db: sqlite3.Connection, ligne: sqlite3.Row, stock: dict[str, dict]
         date_creation=ligne["date_creation"],
         date_preparation=ligne["date_preparation"],
         lot_resultat=ligne["lot_resultat"],
+        portions=_compter_unites(db, ligne["lot_resultat"]),
         ingredients=ingredients,
         # La date limite est celle de l'ingredient le plus presse : au-dela, le
         # plat ne peut plus etre realise tel qu'il a ete prevu.
         date_limite=min(echeances) if echeances else None,
     )
+
+
+def _nom_historique(db: sqlite3.Connection, lot_id: str) -> str:
+    """Nom d'un lot sorti du frigo.
+
+    Consommer ou jeter une unite ne l'efface pas : elle garde son nom, marquee
+    d'un statut de fin. Un plat prepare retrouve donc ses ingredients meme une
+    fois leurs lots entierement ecoules. Seule une suppression definitive (erreur
+    de saisie, frigo vide) fait perdre le nom.
+    """
+    ligne = db.execute(
+        "SELECT MIN(nom) AS nom FROM inventaire_frigo WHERE lot_id = ?;", (lot_id,)
+    ).fetchone()
+    return ligne["nom"] or "Produit retiré du frigo"
+
+
+def _compter_unites(db: sqlite3.Connection, lot_id: str | None) -> int | None:
+    """Portions rangees au frigo par la preparation, sorties comprises."""
+    if lot_id is None:
+        return None
+    return db.execute(
+        "SELECT COUNT(*) FROM inventaire_frigo WHERE lot_id = ?;", (lot_id,)
+    ).fetchone()[0]
 
 
 def _ecrire_ingredients(

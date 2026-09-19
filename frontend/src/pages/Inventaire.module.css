@@ -1,103 +1,207 @@
 .entete {
+  padding: 16px 20px 0;
+}
+
+.titreLigne {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-md);
+  gap: 12px;
 }
 
 .titreGroupe {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 4px;
 }
 
+/* Le logo est dessiné avec son cadre (512 × 512, barres au centre) : il
+   s'affiche tel quel, sans recadrage. */
 .logo {
-  width: 50px;
-  height: 50px;
+  flex: none;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
+.logoSombre {
+  display: none;
+}
+
+/* Mêmes conditions que la palette sombre de styles/theme.css. */
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme='clair'])) .logoClair {
+    display: none;
+  }
+  :global(:root:not([data-theme='clair'])) .logoSombre {
+    display: block;
+  }
+}
+
+:global(:root[data-theme='sombre']) .logoClair {
+  display: none;
+}
+
+:global(:root[data-theme='sombre']) .logoSombre {
+  display: block;
+}
+
 .titre {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 25px;
-  color: var(--text-primary);
+  font: 800 40px/0.88 var(--font-display);
+  letter-spacing: -0.045em;
+  color: var(--ink);
 }
 
-.actionsEntete {
+.totaux {
+  padding-bottom: 4px;
+  text-align: right;
+  font: 500 9.5px/1.5 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* Jauge de décomposition : la part de lots critiques, à surveiller, sains. */
+.jauge {
   display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  flex-shrink: 0;
+  gap: 2px;
+  height: 7px;
+  margin-top: 13px;
 }
 
-/* Deux boutons ronds plutot que des pilules : cote a cote, des pastilles
-   carrees restent lisibles sans manger la largeur du titre. */
-.boutonEntete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--surface-border);
-  color: var(--text-primary);
-  transition: background-color 150ms ease;
+.critique {
+  background: var(--acc);
 }
 
-.boutonEntete:active {
-  background: rgba(124, 147, 255, 0.15);
+.attention {
+  background: rgba(var(--ink-rgb), 0.45);
+}
+
+.ok {
+  background: rgba(var(--ink-rgb), 0.14);
+}
+
+.jaugeLegende {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font: 600 8.5px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.critiques {
+  color: var(--danger);
 }
 
 .filtres {
+  margin-top: 14px;
+  padding: 14px 0 10px;
+}
+
+.affectation {
   display: flex;
+  gap: 2px;
+  margin: 0 20px 10px;
+  border: 1.5px solid var(--ink);
+}
+
+.affectation button {
+  flex: 1;
+  min-height: 40px;
+  color: var(--ink);
+  font: 600 9.5px var(--font-mono);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.affectation button[aria-pressed='true'],
+.categories button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.categories {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 0 20px;
+}
+
+.categories button {
+  flex: 1 0 auto;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid rgba(var(--ink-rgb), 0.22);
+  color: var(--muted);
+  font: 600 9.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.categories button[aria-pressed='true'] {
+  border-color: var(--ink);
+}
+
+/* Ligne de lot. */
+.lot {
+  display: flex;
+  align-items: stretch;
+  background: var(--surf);
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+  color: inherit;
+  text-decoration: none;
+}
+
+.lotCorps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 15px 18px 15px 14px;
+}
+
+.lotHaut {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.lotTextes {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nom {
+  font: 600 19px/1.12 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font: 500 9px/1.3 var(--font-mono);
+  letter-spacing: 0.11em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.lotBas {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-lg);
+  gap: 9px;
 }
 
-.chip {
-  padding: 8px var(--space-md);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--surface-border);
-  background: rgba(21, 26, 46, 0.5);
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 11px;
-  color: var(--text-secondary);
-  min-height: 36px;
-}
-
-.chipActif {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--background);
-}
-
-/* Segments d'affectation, distincts des filtres par categorie qui les suivent.
-   N'apparaissent que si au moins un plat est prevu. */
-.segments {
-  display: inline-flex;
-  padding: 4px;
-  gap: 4px;
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-pill);
-  background: rgba(21, 26, 46, 0.5);
-  margin-bottom: var(--space-sm);
-}
-
-.segment {
-  padding: 7px var(--space-md);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 12px;
-  color: var(--text-secondary);
-  min-height: 34px;
-  transition: background-color 180ms ease, color 180ms ease;
-}
-
-.segmentActif {
-  background: var(--accent);
-  color: var(--background);
+.compte {
+  font: 600 9.5px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  text-transform: uppercase;
 }

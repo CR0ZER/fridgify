@@ -22,6 +22,8 @@ import type {
  */
 const BASE = '/api'
 
+const INJOIGNABLE = 'Serveur injoignable. La Raspberry est-elle allumée ?'
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -37,9 +39,14 @@ async function requete<T>(chemin: string, options: RequestInit = {}): Promise<T>
   try {
     reponse = await fetch(`${BASE}${chemin}`, options)
   } catch {
-    throw new ApiError('Serveur injoignable. La Raspberry est-elle allumée ?', 0)
+    throw new ApiError(INJOIGNABLE, 0)
   }
 
+  // nginx répond lui-même 502 quand l'API est arrêtée : pour l'utilisateur,
+  // c'est la même panne qu'une Raspberry éteinte.
+  if ([502, 503, 504].includes(reponse.status)) {
+    throw new ApiError(INJOIGNABLE, reponse.status)
+  }
   if (!reponse.ok) {
     throw new ApiError(await messageErreur(reponse), reponse.status)
   }
@@ -167,9 +174,9 @@ export const api = {
 
   testerPush: () => requete<ResultatEnvoi>('/push/test', { method: 'POST' }),
 
-  scannerTicket: (image: Blob) => {
+  scannerTicket: (image: Blob, signal?: AbortSignal) => {
     const form = new FormData()
     form.append('image', image, 'ticket.jpg')
-    return requete<ProduitDetecte[]>('/llm/scan', { method: 'POST', body: form })
+    return requete<ProduitDetecte[]>('/llm/scan', { method: 'POST', body: form, signal })
   },
 }

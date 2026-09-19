@@ -1,0 +1,194 @@
+.entete {
+  padding: 2px 20px 12px;
+}
+
+.barreHaut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+
+.modifier {
+  min-height: 34px;
+  padding: 0 13px;
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+}
+
+.nom {
+  font: 600 30px/1.12 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin-top: 8px;
+  font: 500 9px/1.4 var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.reservation {
+  margin-top: 10px;
+  padding: 6px 8px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+/* Unités identiques résumées en un seul bloc. */
+.groupe {
+  margin: 14px 20px;
+  border: 1.5px solid rgba(var(--ink-rgb), 0.18);
+  background: var(--surf);
+}
+
+.groupeCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px 14px;
+}
+
+.groupeTitre {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  font: 600 10px/1.4 var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+.groupeTexte {
+  font: 400 12.5px/1.6 var(--font-display);
+  color: var(--texte-doux);
+}
+
+.groupeActions {
+  display: flex;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.14);
+}
+
+.groupeActions button,
+.deplier {
+  flex: 1;
+  min-height: 46px;
+  font: 600 9.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.consommer {
+  border-right: 1px solid rgba(var(--ink-rgb), 0.14);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.jeter {
+  color: var(--danger);
+}
+
+.deplier {
+  width: 100%;
+  min-height: 44px;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.14);
+  color: var(--ink);
+  letter-spacing: 0.12em;
+}
+
+.replier {
+  width: auto;
+  display: block;
+  margin: 0 20px;
+  border: none;
+}
+
+/* Carte d'une unité. */
+.unite {
+  margin: 14px 20px;
+  background: var(--surf);
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
+}
+
+.uniteTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(var(--ink-rgb), 0.06);
+  color: var(--ink);
+  font: 700 9.5px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Une unité critique se voit avant d'être lue : bandeau plein. */
+.uniteTete[data-critique='true'] {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.badge {
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  font: 600 9px var(--font-mono);
+  letter-spacing: 0.12em;
+}
+
+.uniteCorps {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 4px;
+}
+
+.uniteDates {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.rangee {
+  padding: 14px 16px 0;
+}
+
+.rangee :global(.btn) {
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+}
+
+.rangeeFin {
+  padding: 8px 16px 16px;
+}
+
+.large {
+  flex: 1.4;
+}
+
+.rangee .croix {
+  flex: none;
+  width: 48px;
+  font-size: 13px;
+}
+
+.note {
+  padding: 4px 20px 30px;
+  font: 400 11px/1.6 var(--font-mono);
+  color: var(--muted);
+}
+
+.feuilleTitre {
+  font: 700 10px var(--font-mono);
+  letter-spacing: 0.16em;
+  color: var(--ink);
+  text-transform: uppercase;
+}

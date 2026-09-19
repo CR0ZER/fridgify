@@ -1,53 +1,195 @@
-.inputCache {
+.cache {
   display: none;
 }
 
-.resultats {
+.bloc {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  margin-top: var(--space-lg);
+  gap: 16px;
+  padding: 0 20px 30px;
 }
 
-.nomInput {
-  width: 100%;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 17px;
-  color: var(--text-primary);
-  padding: 4px 0;
-  border-bottom: 1px solid transparent;
+.cadre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 230px;
+  border: 2px dashed rgba(var(--ink-rgb), 0.28);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(var(--ink-rgb), 0.03) 0 8px,
+    transparent 8px 16px
+  );
 }
 
-.nomInput:focus {
-  border-bottom-color: var(--surface-border);
-}
-
-.champ {
-  margin-bottom: var(--space-sm);
-}
-
-.retirer {
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--critical);
-  margin-top: var(--space-sm);
-  padding: 4px 0;
-}
-
-.aide {
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-  margin-top: var(--space-md);
-  text-align: center;
+.viseur {
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(var(--ink-rgb), 0.4);
 }
 
 .progression {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--text-secondary);
-  text-align: center;
-  margin-top: var(--space-sm);
+  height: 6px;
+  overflow: hidden;
+  background: rgba(var(--ink-rgb), 0.12);
+}
+
+.progression div {
+  width: 20%;
+  height: 100%;
+  background: var(--ink);
+  animation: balayer 1.6s ease-in-out infinite;
+}
+
+@keyframes balayer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(500%);
+  }
+}
+
+.grandTitre {
+  font: 800 28px/1.04 var(--font-display);
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.signe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--danger);
+  font: 800 26px/1 var(--font-display);
+  color: var(--danger);
+}
+
+/* Résultats. */
+.compteLigne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 20px;
+}
+
+.compte {
+  font: 600 10px var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+.consigne {
+  padding: 0 20px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.ligne {
+  margin: 0 20px 8px;
+  border: 1.5px solid rgba(var(--ink-rgb), 0.2);
+  background: var(--surf);
+}
+
+.ligneTete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 14px;
+  text-align: left;
+}
+
+.numero {
+  font: 600 9px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.ligneTextes {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ligneNom {
+  font: 700 15.5px/1.15 var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.caret {
+  font: 400 9px var(--font-mono);
+  color: var(--muted);
+}
+
+.caretOuvert {
+  transform: rotate(180deg);
+}
+
+.edition {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 14px;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.12);
+}
+
+.edition :global(.champ) {
+  min-height: 46px;
+  background: var(--bg);
+}
+
+.deuxColonnes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.quantite {
+  justify-content: space-between;
+}
+
+.quantite output {
+  flex: 1;
+}
+
+.dlcTete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  padding: 3px 6px;
+  border: 1px solid rgba(var(--ink-rgb), 0.35);
+  font: 600 8px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.apresOuverture {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.valider {
+  padding: 14px 20px 30px;
+}
+
+.valider :global(.btn) {
+  width: 100%;
 }

@@ -1,39 +1,49 @@
-.backdrop {
+.voile {
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-lg);
-  padding-top: calc(var(--space-lg) + var(--safe-top));
-  padding-bottom: calc(var(--space-lg) + var(--safe-bottom));
-  background: rgba(3, 5, 12, 0.65);
-  animation: apparaitre 150ms ease-out;
-}
-
-.dense {
-  background: rgba(3, 5, 12, 0.7);
+  background: rgba(var(--ink-rgb), 0.5);
+  animation: fondu 0.15s ease-out;
 }
 
 .fenetre {
   width: 100%;
-  max-width: 400px;
-  max-height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--surf);
+}
+
+/* Feuille : monte du bas, filet épais en tête. */
+.feuille {
+  align-items: flex-end;
+}
+
+.feuille .fenetre {
   display: flex;
   flex-direction: column;
-  animation: monter 180ms ease-out;
+  gap: 18px;
+  max-height: calc(100% - var(--safe-top) - 20px);
+  overflow-y: auto;
+  padding: 20px 20px calc(28px + var(--safe-bottom));
+  border-top: 3px solid var(--ink);
+  animation: monter 0.22s ease-out;
 }
 
-@keyframes apparaitre {
-  from {
-    opacity: 0;
-  }
+/* Boîte de dialogue centrée, pour les confirmations. */
+.centre {
+  align-items: center;
+  padding: 26px;
+  background: rgba(var(--ink-rgb), 0.62);
 }
 
-@keyframes monter {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
+.centre .fenetre {
+  max-width: 420px;
+  border: 1.5px solid var(--ink);
+}
+
+/* Champs d'une feuille : sur le fond de page, pour trancher sur la feuille. */
+.feuille .fenetre :global(.champ) {
+  min-height: 48px;
+  background: var(--bg);
 }

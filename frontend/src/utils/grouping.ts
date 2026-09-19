@@ -1,4 +1,4 @@
-import type { Produit } from '../api/types'
+import type { Plat, Produit } from '../api/types'
 import { joursRestants } from './date'
 
 export type ProduitGroupe = {
@@ -11,16 +11,10 @@ export type ProduitGroupe = {
 /** Une unite sans DLC ne doit jamais passer devant une unite datee. */
 const SANS_DLC = Number.POSITIVE_INFINITY
 
-export function urgenceDuGroupe(groupe: ProduitGroupe): number {
-  return Math.min(...groupe.unites.map((u) => joursRestants(u.date_peremption_effective) ?? SANS_DLC))
-}
+const urgence = (unite: Produit) => joursRestants(unite.date_peremption_effective) ?? SANS_DLC
 
 export function uniteLaPlusUrgente(groupe: ProduitGroupe): Produit {
-  return [...groupe.unites].sort(
-    (a, b) =>
-      (joursRestants(a.date_peremption_effective) ?? SANS_DLC) -
-      (joursRestants(b.date_peremption_effective) ?? SANS_DLC),
-  )[0]
+  return [...groupe.unites].sort((a, b) => urgence(a) - urgence(b))[0]
 }
 
 export function grouperParLot(produits: Produit[]): ProduitGroupe[] {
@@ -38,5 +32,24 @@ export function grouperParLot(produits: Produit[]): ProduitGroupe[] {
       categorie: unites[0].categorie,
       unites,
     }))
-    .sort((a, b) => urgenceDuGroupe(a) - urgenceDuGroupe(b))
+    .sort((a, b) => urgence(uniteLaPlusUrgente(a)) - urgence(uniteLaPlusUrgente(b)))
 }
+
+export type Reservation = { nom: string; quantite: number }
+
+/** lot_id -> plats prévus qui en réservent une part. */
+export function reservationsParLot(plats: Plat[]): Map<string, Reservation[]> {
+  const index = new Map<string, Reservation[]>()
+  for (const plat of plats) {
+    if (plat.statut !== 'prevu') continue
+    for (const ingredient of plat.ingredients) {
+      const liste = index.get(ingredient.lot_id) ?? []
+      liste.push({ nom: plat.nom, quantite: ingredient.quantite })
+      index.set(ingredient.lot_id, liste)
+    }
+  }
+  return index
+}
+
+export const totalReserve = (reservations: Reservation[] = []) =>
+  reservations.reduce((total, r) => total + r.quantite, 0)

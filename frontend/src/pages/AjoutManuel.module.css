@@ -1,60 +1,123 @@
-.entete {
+/* Formulaire en lignes : libellé à gauche, valeur alignée à droite, comme une
+   étiquette de fiche technique. */
+.liste {
+  border-top: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+
+.ligne {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-lg);
+  gap: 14px;
+  min-height: 54px;
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
 }
 
-.fermer {
-  padding: 6px;
-  color: var(--text-secondary);
+.ligne > :global(.etiquette) {
+  flex: none;
+  width: 104px;
 }
 
-.bascule {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  cursor: pointer;
-  padding: 4px 0;
+/* Libellés longs des lignes à compteur ou interrupteur. */
+.ligne > .libre {
+  flex: 1;
+  width: auto;
 }
 
-.case {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid var(--surface-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: var(--background);
+.valeur {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  text-align: right;
+  text-align-last: right;
+  font: 600 16px var(--font-display);
+  color: var(--ink);
+  outline-offset: -2px;
 }
 
-.caseCochee {
-  background: var(--accent);
-  border-color: var(--accent);
+.valeur::placeholder {
+  color: var(--muted);
+  font-weight: 400;
 }
 
-.basculeLabel {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--text-primary);
+/* Safari aligne à gauche le texte des champs date : on le recale à droite. */
+.date {
+  font: 500 15px var(--font-mono);
 }
 
-.formulaire {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
+.date::-webkit-date-and-time-value {
+  text-align: right;
 }
 
-.sauvegarder {
-  margin-top: var(--space-lg);
+.ligneDlc {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+
+.ligneDlc .ligne {
+  border-bottom: none;
 }
 
 .indice {
-  font-family: var(--font-body);
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-top: var(--space-xs);
-  line-height: 1.4;
+  margin-top: -4px;
+  padding: 0 22px;
+  text-align: right;
+  font: 600 8.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.saisi {
+  color: var(--ink);
+}
+
+.ligne :global(.stepper) {
+  border-width: 1px;
+  border-color: rgba(var(--ink-rgb), 0.25);
+}
+
+.ligne :global(.stepper) button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  font-weight: 300;
+  font-size: 18px;
+}
+
+.ligne :global(.stepper) output {
+  width: 38px;
+}
+
+.aide {
+  padding: 0 22px 12px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+  text-align: right;
+  font: 400 10.5px/1.4 var(--font-display);
+  color: var(--muted);
+}
+
+/* La ligne d'aide prolonge la ligne Quantité : on retire le filet entre les deux. */
+.ligne:has(+ .aide) {
+  border-bottom: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 22px 34px;
+}
+
+.actions :global(.btn) {
+  flex: 1;
+  min-height: 46px;
+  letter-spacing: 0.13em;
+}
+
+.annuler {
+  flex: none;
+  color: var(--muted);
 }

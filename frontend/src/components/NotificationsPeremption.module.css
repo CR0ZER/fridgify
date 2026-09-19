@@ -1,97 +1,87 @@
-.carte {
-  margin-top: var(--space-lg);
+.obstacle {
+  margin: 0 20px 12px;
+  border-color: var(--danger);
 }
 
-.note {
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--text-secondary);
+.obstacle :global(.encadre-titre) {
+  background: var(--danger);
 }
 
-.note code {
-  font-family: var(--font-mono);
-  color: var(--accent);
-}
-
-.diagnostic {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-xs) 0 var(--space-sm);
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.valeur {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-primary);
-}
-
-.actions {
+.obstacleCorps {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 10px;
+  padding: 14px;
+  font: 400 13px/1.55 var(--font-display);
+  color: var(--ink);
+  text-wrap: pretty;
 }
 
-.boutonTest {
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-button);
-  padding: 12px;
-  min-height: 44px;
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 13px;
-  color: var(--text-primary);
-  width: 100%;
+.geste {
+  padding: 8px 0 8px 12px;
+  border-left: 4px solid var(--ink);
+  font: 600 11.5px/1.6 var(--font-mono);
 }
 
-.boutonTest:disabled {
-  opacity: 0.5;
+.alerte {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 20px;
+  padding: 14px;
+  border: 1.5px solid var(--ink);
+  background: var(--surf);
 }
 
-/* Liste des appareils abonnes : un frigo se partage, les alertes aussi. */
+.alerte[data-bloque='true'] {
+  border-color: rgba(var(--ink-rgb), 0.3);
+}
+
+.alerteTextes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.alerteTitre {
+  font: 700 14px var(--font-display);
+  color: var(--ink);
+}
+
+.alerteAide {
+  font: 400 11px/1.4 var(--font-display);
+  color: var(--muted);
+}
+
 .appareils {
-  list-style: none;
-  margin-top: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
+  margin: 10px 20px 0;
+  padding: 14px;
+  border: 1px solid rgba(var(--ink-rgb), 0.14);
+  background: var(--surf);
 }
 
-.appareils li {
+.appareil {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
-  gap: var(--space-sm);
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text-primary);
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.depuis {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-secondary);
+.appareilNom {
+  font: 600 15px var(--font-display);
+  color: var(--ink);
 }
 
-.confirmation {
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--fresh);
-  margin-top: var(--space-sm);
+.appareils :global(.btn) {
+  min-height: 46px;
+  font-size: 9.5px;
 }
 
-.aide {
-  font-family: var(--font-body);
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-  margin-top: var(--space-sm);
+.resultat {
+  font: 500 11px/1.5 var(--font-mono);
+  color: var(--ink);
 }

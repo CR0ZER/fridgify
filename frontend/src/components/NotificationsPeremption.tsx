@@ -2,26 +2,25 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { api } from '../api/client'
 import type { EtatPush } from '../api/types'
+import { dateCourte } from '../utils/date'
 import { abonnementCourant, activer, desactiver, etatSupport, type EtatSupport } from '../utils/push'
-import GlassCard from './GlassCard'
-import Icon from './Icon'
-import StatusDot from './StatusDot'
 import styles from './NotificationsPeremption.module.css'
 
 /** Ce qui manque, expliqué plutôt que résumé en « indisponible ». */
-const OBSTACLES: Record<Exclude<EtatSupport, 'ok'>, string> = {
-  'non-securise':
-    "Fridgify est ouvert en HTTP. Les notifications web exigent une connexion chiffrée : rouvrez l'application depuis son adresse HTTPS, puis réessayez ici.",
-  'ios-hors-ecran-accueil':
-    "Sous iOS, seules les applications ajoutées à l'écran d'accueil peuvent recevoir des notifications. Touchez Partager → « Sur l'écran d'accueil », puis ouvrez Fridgify depuis son icône.",
-  'non-supporte': "Ce navigateur ne gère pas les notifications web.",
+const OBSTACLES: Record<Exclude<EtatSupport, 'ok'>, { texte: string; geste?: string }> = {
+  'non-securise': {
+    texte:
+      "Fridgify est ouvert en HTTP. Les notifications web exigent une connexion chiffrée : rouvrez l'application depuis son adresse HTTPS.",
+  },
+  'ios-hors-ecran-accueil': {
+    texte:
+      "Fridgify est ouvert dans Safari, pas installé sur l'écran d'accueil. iOS n'autorise les notifications que pour les applications installées.",
+    geste: "Partager → Sur l'écran d'accueil",
+  },
+  'non-supporte': { texte: 'Ce navigateur ne gère pas les notifications web.' },
 }
 
-export default function NotificationsPeremption({
-  onErreur,
-}: {
-  onErreur: (message: string) => void
-}) {
+export default function NotificationsPeremption({ onErreur }: { onErreur: (message: string) => void }) {
   const [support] = useState<EtatSupport>(etatSupport)
   const [etat, setEtat] = useState<EtatPush | null>(null)
   const [actifIci, setActifIci] = useState(false)
@@ -30,12 +29,14 @@ export default function NotificationsPeremption({
 
   const charger = useCallback(async () => {
     try {
-      const [serveur, abonnement] = await Promise.all([api.etatPush(), abonnementCourant()])
+      // L'état du serveur d'abord : `abonnementCourant` attend le service
+      // worker, qui peut ne jamais être prêt (serveur de développement).
+      const serveur = await api.etatPush()
       setEtat(serveur)
+      const abonnement = await abonnementCourant()
       // Un abonnement peut exister côté navigateur sans être connu du serveur
       // (base réinitialisée, clés VAPID changées) : les deux doivent concorder.
-      const connu = abonnement !== null && serveur.appareils.length > 0
-      setActifIci(connu)
+      setActifIci(abonnement !== null && serveur.appareils.length > 0)
     } catch (e) {
       onErreur(e instanceof Error ? e.message : 'Lecture impossible.')
     }
@@ -52,12 +53,9 @@ export default function NotificationsPeremption({
       if (actifIci) {
         const endpoint = await desactiver()
         if (endpoint) await api.desabonnerPush(endpoint)
-        setMessage('Notifications désactivées sur cet appareil.')
       } else {
         if (!etat?.cle_publique) throw new Error('Le serveur ne fournit pas de clé publique.')
-        const abonnement = await activer(etat.cle_publique)
-        await api.abonnerPush(abonnement)
-        setMessage('Cet appareil recevra les alertes de péremption.')
+        await api.abonnerPush(await activer(etat.cle_publique))
       }
       await charger()
     } catch (e) {
@@ -74,7 +72,7 @@ export default function NotificationsPeremption({
       const resultat = await api.testerPush()
       setMessage(
         resultat.envoyes > 0
-          ? `Envoyé à ${resultat.envoyes} appareil${resultat.envoyes > 1 ? 's' : ''}.`
+          ? `Notification de test envoyée · ${resultat.envoyes} appareil${resultat.envoyes > 1 ? 's' : ''} atteint${resultat.envoyes > 1 ? 's' : ''}`
           : 'Aucun envoi n’a abouti.',
       )
       if (resultat.echecs.length > 0) onErreur(resultat.echecs.join(' · '))
@@ -86,79 +84,67 @@ export default function NotificationsPeremption({
     }
   }
 
-  const indisponibleServeur = etat !== null && !etat.disponible
+  const obstacle = support !== 'ok' ? OBSTACLES[support] : null
+  const sansCles = support === 'ok' && etat !== null && !etat.disponible
+  const bloque = obstacle !== null || sansCles
+  const seuil = etat && etat.seuil_jours > 1 ? `${etat.seuil_jours} jours` : 'un jour'
 
   return (
-    <GlassCard className={styles.carte}>
-      <h2 className="section-label">Notifications de péremption</h2>
-
-      {support !== 'ok' && <p className={styles.note}>{OBSTACLES[support]}</p>}
-
-      {support === 'ok' && indisponibleServeur && (
-        <p className={styles.note}>
-          Le serveur n'a pas de clés VAPID. Générez-les avec{' '}
-          <code>python -m app.push</code>, reportez-les dans <code>backend/.env</code>, puis
-          redémarrez l'API.
-        </p>
+    <>
+      {(obstacle || sansCles) && (
+        <section className={`encadre ${styles.obstacle}`}>
+          <h3 className="encadre-titre">Activation impossible</h3>
+          <div className={styles.obstacleCorps}>
+            <p>
+              {obstacle
+                ? obstacle.texte
+                : "Le serveur n'a pas de clés VAPID. Générez-les avec python -m app.push, reportez-les dans backend/.env, puis redémarrez l'API."}
+            </p>
+            {obstacle?.geste && <p className={styles.geste}>{obstacle.geste}</p>}
+          </div>
+        </section>
       )}
 
-      {support === 'ok' && etat?.disponible && (
-        <>
-          <div className={styles.diagnostic}>
-            <span>Sur cet appareil</span>
-            <span className={styles.valeur}>
-              <StatusDot couleur={actifIci ? 'var(--fresh)' : 'var(--text-secondary)'} taille={8} />
-              {actifIci ? 'activées' : 'désactivées'}
-            </span>
-          </div>
+      <div className={styles.alerte} data-bloque={bloque}>
+        <div className={styles.alerteTextes}>
+          <span className={styles.alerteTitre} id="alerte-quotidienne">
+            Alerte quotidienne à 9 h
+          </span>
+          <span className={styles.alerteAide}>
+            Sur cet appareil, pour ce qui périme sous {seuil} ou est déjà périmé. Rien n'est envoyé
+            si aucun produit n'est concerné.
+          </span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          className="interrupteur"
+          aria-checked={actifIci && !bloque}
+          aria-labelledby="alerte-quotidienne"
+          onClick={basculer}
+          disabled={bloque || enCours || etat === null}
+        />
+      </div>
 
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={actifIci ? 'btn btn-secondaire' : 'btn btn-primaire'}
-              onClick={basculer}
-              disabled={enCours}
-            >
-              {!actifIci && <Icon nom="cloche" taille={18} />}
-              {actifIci ? 'Désactiver sur cet appareil' : 'Activer les notifications'}
-            </button>
-
-            {etat.appareils.length > 0 && (
-              <button
-                type="button"
-                className={styles.boutonTest}
-                onClick={tester}
-                disabled={enCours}
-              >
-                Envoyer une notification de test
-              </button>
-            )}
-          </div>
-
-          {etat.appareils.length > 0 && (
-            <ul className={styles.appareils}>
-              {etat.appareils.map((appareil) => (
-                <li key={`${appareil.appareil}-${appareil.date_creation}`}>
-                  <span>{appareil.appareil}</span>
-                  <span className={styles.depuis}>
-                    {appareil.dernier_succes
-                      ? `dernière alerte le ${appareil.dernier_succes}`
-                      : 'jamais alerté'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {message && <p className={styles.confirmation}>{message}</p>}
-
-          <p className={styles.aide}>
-            Une alerte par jour, à 9 h, pour ce qui périme sous{' '}
-            {etat.seuil_jours <= 1 ? 'un jour' : `${etat.seuil_jours} jours`} — et pour ce qui est
-            déjà périmé. Rien ne part si le frigo est sain.
-          </p>
-        </>
+      {!bloque && etat && etat.appareils.length > 0 && (
+        <section className={styles.appareils}>
+          <h3 className="etiquette">Appareils abonnés</h3>
+          {etat.appareils.map((appareil) => (
+            <div key={`${appareil.appareil}-${appareil.date_creation}`} className={styles.appareil}>
+              <span className={styles.appareilNom}>{appareil.appareil}</span>
+              <span className="meta" style={{ letterSpacing: '0.06em' }}>
+                {appareil.dernier_succes
+                  ? `Dernier envoi ${dateCourte(appareil.dernier_succes)}`
+                  : 'Jamais alerté'}
+              </span>
+            </div>
+          ))}
+          <button type="button" className="btn" onClick={tester} disabled={enCours}>
+            Envoyer une notification de test
+          </button>
+          {message && <p className={styles.resultat}>{message}</p>}
+        </section>
       )}
-    </GlassCard>
+    </>
   )
 }
