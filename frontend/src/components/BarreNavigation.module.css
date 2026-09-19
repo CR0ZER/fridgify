@@ -45,6 +45,7 @@
 
 .caret {
   margin-left: auto;
+  padding-right: 12px;
   font: 400 9px var(--font-mono);
   color: color-mix(in srgb, var(--bg) 55%, transparent);
   transition: transform 0.18s ease;
@@ -52,17 +53,6 @@
 
 .caretOuvert {
   transform: rotate(180deg);
-}
-
-.courses {
-  flex: none;
-  min-height: 48px;
-  padding: 0 16px;
-  background: var(--bg);
-  color: var(--ink);
-  font: 600 10px var(--font-mono);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
 }
 
 /* Liste des sections, posée au-dessus de la barre. */

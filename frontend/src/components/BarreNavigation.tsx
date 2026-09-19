@@ -24,10 +24,7 @@ function sectionCourante(pathname: string) {
   return SECTIONS.find((s) => s.chemin === racine) ?? SECTIONS[0]
 }
 
-/**
- * Barre basse : la section courante, qui ouvre la liste des sections, et un
- * raccourci permanent vers les courses — l'écran qu'on ouvre au magasin.
- */
+/** Barre basse : la section courante, qui ouvre la liste des sections. */
 export default function BarreNavigation() {
   const { pathname } = useLocation()
   const naviguer = useNavigate()
@@ -75,9 +72,6 @@ export default function BarreNavigation() {
             <span className={styles.index}>{numeroSection(courante.chemin)}</span>
             <span className={styles.courante}>{courante.libelle}</span>
             <span className={ouverte ? `${styles.caret} ${styles.caretOuvert}` : styles.caret}>▲</span>
-          </button>
-          <button type="button" className={styles.courses} onClick={() => naviguer('/courses')}>
-            Courses
           </button>
         </div>
       </div>
