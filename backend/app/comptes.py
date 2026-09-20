@@ -317,7 +317,7 @@ def _demander_mot_de_passe() -> str:
 
 
 def main() -> None:
-    analyseur = argparse.ArgumentParser(description="Comptes Fridgify.")
+    analyseur = argparse.ArgumentParser(description="Comptes Frigo.")
     sous = analyseur.add_subparsers(dest="commande", required=True)
     sous.add_parser("lister", help="comptes existants")
     for nom, aide in (

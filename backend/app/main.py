@@ -18,9 +18,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Fridgify API",
+    title="Frigo API",
     version="2.0.0",
-    description="Backend de Fridgify : inventaire du frigo, statistiques et appels Gemini.",
+    description="Backend de Frigo : inventaire du frigo, statistiques et appels Gemini.",
     lifespan=lifespan,
 )
 

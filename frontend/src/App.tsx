@@ -97,7 +97,7 @@ function Verrou({ children }: { children: React.ReactNode }) {
   return (
     <main className="page">
       <div className="vide" style={{ paddingTop: 90 }}>
-        <h1 className="vide-titre">Fridgify est verrouillé.</h1>
+        <h1 className="vide-titre">Frigo est verrouillé.</h1>
         <p className="texte-aide">
           Déverrouillez avec Face ID, Touch ID ou votre empreinte pour retrouver votre frigo.
         </p>

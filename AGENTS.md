@@ -1,4 +1,4 @@
-# Fridgify
+# Frigo
 
 Progressive Web App auto-hébergée sur Raspberry Pi. Voir `README.md` pour
 l'architecture complète.

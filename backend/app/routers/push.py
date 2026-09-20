@@ -128,7 +128,7 @@ def envoyer_test(
     if urgents:
         titre, corps = composer(urgents)
     else:
-        titre = "Fridgify est prêt"
+        titre = "Frigo est prêt"
         corps = "Rien ne périme dans les prochains jours. Ce test confirme le transport."
 
     return ResultatEnvoi(**push.envoyer_a_tous(db, utilisateur.id, titre, corps))

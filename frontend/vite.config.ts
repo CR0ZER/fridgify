@@ -30,8 +30,8 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon-*.png', 'apple-touch-icon-*.png'],
         manifest: {
-          name: 'Fridgify',
-          short_name: 'Fridgify',
+          name: 'Frigo',
+          short_name: 'Frigo',
           description: 'Inventaire du frigo, suivi des peremptions et liste de courses.',
           lang: 'fr',
           start_url: '/',

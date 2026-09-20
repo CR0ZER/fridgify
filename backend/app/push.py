@@ -27,6 +27,17 @@ from .config import get_settings
 
 logger = logging.getLogger(__name__)
 
+#: Ce que veut dire un refus, quand le code seul n'aide pas. Apple et Google
+#: repondent 403 quand la signature VAPID leur deplait : neuf fois sur dix, le
+#: contact declare n'est pas une adresse plausible (le defaut du depot,
+#: mailto:fridgify@localhost, en est une).
+EXPLICATIONS = {
+    403: "signature VAPID refusee : verifiez VAPID_SUBJECT dans backend/.env"
+    " (une vraie adresse mailto:) et les cles VAPID",
+    413: "notification trop lourde",
+    429: "trop d'envois, le service de push demande de ralentir",
+}
+
 #: Duree de vie du message dans la file du service de push. Une alerte de
 #: peremption n'a plus d'interet le lendemain.
 TTL = 12 * 3600
@@ -102,7 +113,11 @@ def envoyer_a_tous(
             if statut in (404, 410):
                 perimes.append(abonnement["endpoint"])
             else:
-                echecs.append(f"{_appareil(abonnement)} : {statut or exc}")
+                detail = EXPLICATIONS.get(statut)
+                echecs.append(
+                    f"{_appareil(abonnement)} : {statut or exc}"
+                    + (f" — {detail}" if detail else "")
+                )
                 logger.warning("Push refuse (%s) pour %s", statut, abonnement["endpoint"][:60])
             continue
 

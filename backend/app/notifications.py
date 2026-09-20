@@ -105,7 +105,7 @@ def composer(urgents: list[dict]) -> tuple[str, str]:
             quand = "périme demain"
         else:
             quand = f"périme dans {jours} jours"
-        return f"{_etiquette(seul)} {quand}", "Ouvrez Fridgify pour le retrouver."
+        return f"{_etiquette(seul)} {quand}", "Ouvrez Frigo pour le retrouver."
 
     total = sum(p["unites"] for p in urgents)
     titre = f"{total} produits à consommer" if total > 1 else "1 produit à consommer"
@@ -181,7 +181,7 @@ def executer(force: bool = False, simuler: bool = False) -> dict:
 
 
 def main() -> None:
-    analyseur = argparse.ArgumentParser(description="Alerte quotidienne de peremption Fridgify.")
+    analyseur = argparse.ArgumentParser(description="Alerte quotidienne de peremption Frigo.")
     analyseur.add_argument("--force", action="store_true", help="ignore le garde-fou du jour")
     analyseur.add_argument("--simuler", action="store_true", help="affiche sans envoyer")
     arguments = analyseur.parse_args()

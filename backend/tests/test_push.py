@@ -72,7 +72,7 @@ def test_test_confirme_le_transport_quand_rien_ne_perime(client, creer_lot, abon
     creer_lot("Carotte", dlc=(date.today() + timedelta(days=30)).isoformat())
 
     assert client.post("/api/push/test").json()["envoyes"] == 1
-    assert "Fridgify est prêt" in push_simule.envois[0]["data"]
+    assert "Frigo est prêt" in push_simule.envois[0]["data"]
 
 
 def test_abonnement_expire_est_supprime(client, abonner, push_simule):
@@ -102,3 +102,15 @@ def test_echec_transitoire_conserve_l_abonnement(client, abonner, push_simule):
     assert resultat["supprimes"] == 0
     assert len(resultat["echecs"]) == 1
     assert len(client.get("/api/push/etat").json()["appareils"]) == 1
+
+
+def test_refus_403_explique_la_cause(client, abonner, push_simule, creer_lot):
+    """« 403 » seul n'aide personne : le message doit dire ou chercher."""
+    endpoint = abonner()
+    push_simule.refus[endpoint] = 403
+    creer_lot("Saumon", dlc=date.today().isoformat())
+
+    resultat = client.post("/api/push/test").json()
+
+    assert resultat["envoyes"] == 0
+    assert "VAPID_SUBJECT" in resultat["echecs"][0]

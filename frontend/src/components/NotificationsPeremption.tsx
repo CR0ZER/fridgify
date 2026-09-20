@@ -10,11 +10,11 @@ import styles from './NotificationsPeremption.module.css'
 const OBSTACLES: Record<Exclude<EtatSupport, 'ok'>, { texte: string; geste?: string }> = {
   'non-securise': {
     texte:
-      "Fridgify est ouvert en HTTP. Les notifications web exigent une connexion chiffrée : rouvrez l'application depuis son adresse HTTPS.",
+      "Frigo est ouvert en HTTP. Les notifications web exigent une connexion chiffrée : rouvrez l'application depuis son adresse HTTPS.",
   },
   'ios-hors-ecran-accueil': {
     texte:
-      "Fridgify est ouvert dans Safari, pas installé sur l'écran d'accueil. iOS n'autorise les notifications que pour les applications installées.",
+      "Frigo est ouvert dans Safari, pas installé sur l'écran d'accueil. iOS n'autorise les notifications que pour les applications installées.",
     geste: "Partager → Sur l'écran d'accueil",
   },
   'non-supporte': { texte: 'Ce navigateur ne gère pas les notifications web.' },

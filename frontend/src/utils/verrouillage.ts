@@ -70,7 +70,7 @@ export async function activerVerrou(identifiant: string): Promise<void> {
   const cle = (await navigator.credentials.create({
     publicKey: {
       challenge: octets(32),
-      rp: { name: 'Fridgify' },
+      rp: { name: 'Frigo' },
       user: { id: octets(16), name: identifiant, displayName: identifiant },
       // ES256 puis RS256 : les deux algorithmes que tous les authentificateurs
       // connaissent.

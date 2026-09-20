@@ -8,7 +8,7 @@
 
 /** Repli affiché si la charge utile est absente ou illisible. */
 const REPLI = {
-  titre: 'Fridgify',
+  titre: 'Frigo',
   corps: 'Un produit arrive à péremption.',
   url: '/',
 }

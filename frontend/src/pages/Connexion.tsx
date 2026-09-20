@@ -88,7 +88,7 @@ function Enseigne() {
         <span />
       </div>
       <div>
-        <h1 className={styles.titre}>Fridgify</h1>
+        <h1 className={styles.titre}>Frigo</h1>
         <p className="etiquette" style={{ marginTop: 8 }}>
           Un compte · un frigo
         </p>
@@ -166,7 +166,7 @@ function Formulaire({
             </div>
           )}
           <div className={styles.enteteTextes}>
-            <h1 className={styles.titreCompte}>{compte ?? 'Fridgify'}</h1>
+            <h1 className={styles.titreCompte}>{compte ?? 'Frigo'}</h1>
             <p className="etiquette">{compte ? 'Votre frigo' : 'Un compte · un frigo'}</p>
           </div>
         </header>
