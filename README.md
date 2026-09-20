@@ -30,7 +30,27 @@ Raspberry Pi, qui envoie chaque matin l'alerte de ce qui doit partir en premier.
 
 </div>
 
-<!-- Captures d'écran à venir : Frigo, détail d'un lot, Plats, Courses, en clair et en sombre. -->
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="images/home_page_light.png" alt="L'inventaire en palette claire" width="300">
+    </td>
+    <td align="center" width="50%">
+      <img src="images/home_page_dark.png" alt="L'inventaire en palette sombre" width="300">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Palette claire</b> · émail de frigo</sub></td>
+    <td align="center"><sub><b>Palette sombre</b> · nuit de frigo</sub></td>
+  </tr>
+</table>
+
+<sub>L'inventaire, du plus urgent au moins urgent. La barre de couleur et le
+compte à rebours disent en un coup d'œil ce qui doit partir aujourd'hui.</sub>
+
+</div>
 
 ## Pourquoi
 
@@ -178,7 +198,8 @@ renouvelé automatiquement par `tailscaled`.
 1. Installer Tailscale depuis l'App Store et rejoindre le même tailnet.
 2. Ouvrir **l'adresse HTTPS** dans Safari, puis Partager → « Sur l'écran
    d'accueil ».
-3. Ouvrir Frigo depuis son icône et activer l'alerte dans Réglages.
+3. Ouvrir Frigo depuis son icône, se connecter, puis activer l'alerte dans
+   Réglages.
 
 iOS ne donne accès aux notifications qu'aux applications ajoutées à l'écran
 d'accueil, et depuis l'adresse HTTPS : celle en `http://` reste utilisable
@@ -222,6 +243,10 @@ Le serveur Vite relaie `/api` vers le port 8000 en ajoutant lui-même la clé
 lue dans `backend/.env`, comme nginx en production. Sous Windows, remplacer
 `.venv/bin/` par `.venv\Scripts\`.
 
+L'application demande un compte dès la première ouverture : créez-le depuis
+l'écran de connexion, ou en ligne de commande avec
+`.venv/bin/python -m app.comptes creer <identifiant>`.
+
 ### Tests
 
 ```bash
@@ -231,8 +256,10 @@ cd backend && .venv/bin/python -m pytest
 La suite couvre la logique métier : cycle de vie d'un produit, réservation et
 préparation d'un plat, liste de courses, fermeture des catégories, lecture de
 la réponse de Gemini, sélection et formulation des alertes, purge des
-abonnements expirés. Elle tourne sur une base temporaire et simule tous les
-envois : aucun test ne touche la production ni un service externe.
+abonnements expirés. Le cloisonnement des comptes y tient une place à part —
+un frigo ne doit jamais voir celui d'à côté, même avec un identifiant deviné.
+Elle tourne sur une base temporaire et simule tous les envois : aucun test ne
+touche la production ni un service externe.
 
 ### Conventions
 
