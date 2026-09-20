@@ -1,5 +1,5 @@
 .squelette {
-  padding: calc(var(--safe-top) + 18px) 0 12px;
+  padding: calc(var(--haut-ecran) + 18px) 0 12px;
 }
 
 .squelette > * {
@@ -55,7 +55,7 @@
   justify-content: center;
   gap: 20px;
   min-height: calc(100dvh - var(--hauteur-nav));
-  padding: var(--safe-top) 34px 60px;
+  padding: var(--haut-ecran) 34px 60px;
 }
 
 .signe {

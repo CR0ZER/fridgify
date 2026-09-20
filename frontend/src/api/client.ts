@@ -11,7 +11,6 @@ import type {
   Produit,
   ProduitDetecte,
   Profil,
-  ResultatEnvoi,
   Stats,
   StatutFin,
   UniteACreer,
@@ -197,8 +196,6 @@ export const api = {
 
   desabonnerPush: (endpoint: string) =>
     requete<void>('/push/abonnements', json('DELETE', { endpoint })),
-
-  testerPush: () => requete<ResultatEnvoi>('/push/test', { method: 'POST' }),
 
   scannerTicket: (image: Blob, signal?: AbortSignal) => {
     const form = new FormData()

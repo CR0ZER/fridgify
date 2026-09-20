@@ -53,35 +53,3 @@
   font: 400 11px/1.4 var(--font-display);
   color: var(--muted);
 }
-
-.appareils {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 10px 20px 0;
-  padding: 14px;
-  border: 1px solid rgba(var(--ink-rgb), 0.14);
-  background: var(--surf);
-}
-
-.appareil {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.appareilNom {
-  font: 600 15px var(--font-display);
-  color: var(--ink);
-}
-
-.appareils :global(.btn) {
-  min-height: 46px;
-  font-size: 9.5px;
-}
-
-.resultat {
-  font: 500 11px/1.5 var(--font-mono);
-  color: var(--ink);
-}

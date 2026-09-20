@@ -49,6 +49,9 @@
   --font-mono: 'Martian Mono', ui-monospace, monospace;
 
   --safe-top: env(safe-area-inset-top, 0px);
+  /* Quelques pixels de plus que la barre d'etat : iOS pose un leger flou sur le
+     haut d'une zone qui defile, et le premier texte s'y perdait. */
+  --haut-ecran: calc(env(safe-area-inset-top, 0px) + 6px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   /* Barre de navigation basse : la rangée de boutons, puis la zone du geste
      d'accueil. La barre de l'iPhone ne mord que sur le bas de cette zone :

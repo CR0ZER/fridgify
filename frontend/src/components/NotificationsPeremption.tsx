@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { api } from '../api/client'
 import type { EtatPush } from '../api/types'
-import { dateCourte } from '../utils/date'
 import { abonnementCourant, activer, desactiver, etatSupport, type EtatSupport } from '../utils/push'
 import styles from './NotificationsPeremption.module.css'
 
@@ -25,7 +24,6 @@ export default function NotificationsPeremption({ onErreur }: { onErreur: (messa
   const [etat, setEtat] = useState<EtatPush | null>(null)
   const [actifIci, setActifIci] = useState(false)
   const [enCours, setEnCours] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
 
   const charger = useCallback(async () => {
     try {
@@ -48,7 +46,6 @@ export default function NotificationsPeremption({ onErreur }: { onErreur: (messa
 
   const basculer = async () => {
     setEnCours(true)
-    setMessage(null)
     try {
       if (actifIci) {
         const endpoint = await desactiver()
@@ -60,25 +57,6 @@ export default function NotificationsPeremption({ onErreur }: { onErreur: (messa
       await charger()
     } catch (e) {
       onErreur(e instanceof Error ? e.message : 'Action impossible.')
-    } finally {
-      setEnCours(false)
-    }
-  }
-
-  const tester = async () => {
-    setEnCours(true)
-    setMessage(null)
-    try {
-      const resultat = await api.testerPush()
-      setMessage(
-        resultat.envoyes > 0
-          ? `Notification de test envoyée · ${resultat.envoyes} appareil${resultat.envoyes > 1 ? 's' : ''} atteint${resultat.envoyes > 1 ? 's' : ''}`
-          : 'Aucun envoi n’a abouti.',
-      )
-      if (resultat.echecs.length > 0) onErreur(resultat.echecs.join(' · '))
-      if (resultat.supprimes > 0) await charger()
-    } catch (e) {
-      onErreur(e instanceof Error ? e.message : 'Envoi impossible.')
     } finally {
       setEnCours(false)
     }
@@ -125,26 +103,6 @@ export default function NotificationsPeremption({ onErreur }: { onErreur: (messa
           disabled={bloque || enCours || etat === null}
         />
       </div>
-
-      {!bloque && etat && etat.appareils.length > 0 && (
-        <section className={styles.appareils}>
-          <h3 className="etiquette">Appareils abonnés</h3>
-          {etat.appareils.map((appareil) => (
-            <div key={`${appareil.appareil}-${appareil.date_creation}`} className={styles.appareil}>
-              <span className={styles.appareilNom}>{appareil.appareil}</span>
-              <span className="meta" style={{ letterSpacing: '0.06em' }}>
-                {appareil.dernier_succes
-                  ? `Dernier envoi ${dateCourte(appareil.dernier_succes)}`
-                  : 'Jamais alerté'}
-              </span>
-            </div>
-          ))}
-          <button type="button" className="btn" onClick={tester} disabled={enCours}>
-            Envoyer une notification de test
-          </button>
-          {message && <p className={styles.resultat}>{message}</p>}
-        </section>
-      )}
     </>
   )
 }
