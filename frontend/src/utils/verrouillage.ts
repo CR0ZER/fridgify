@@ -84,8 +84,13 @@ export async function activerVerrou(identifiant: string): Promise<void> {
         userVerification: 'required',
         residentKey: 'preferred',
       },
+      // Demande explicitement l'appareil lui-même. iOS confie malgré tout la
+      // création au gestionnaire de mots de passe défini par défaut quand il y
+      // en a un : le standard ne permet pas de l'exclure, seulement de dire sa
+      // préférence. Ignoré par les navigateurs qui ne connaissent pas `hints`.
+      hints: ['client-device'],
       timeout: 60_000,
-    },
+    } as PublicKeyCredentialCreationOptions,
   })) as PublicKeyCredential | null
 
   if (!cle) throw new Error("L'appareil n'a pas confirmé l'enregistrement.")

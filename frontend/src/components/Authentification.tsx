@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -17,6 +18,8 @@ const CLE_COMPTES = 'fridgify-comptes'
 type Contexte = {
   /** `undefined` tant que la session n'a pas été vérifiée au démarrage. */
   profil: Profil | null | undefined
+  /** Pourquoi l'écran de connexion s'affiche, quand ce n'est pas évident. */
+  avis: string | null
   connexion: (corps: Identifiants) => Promise<void>
   inscription: (corps: Identifiants) => Promise<void>
   deconnexion: () => Promise<void>
@@ -25,6 +28,7 @@ type Contexte = {
 
 const AuthContexte = createContext<Contexte>({
   profil: null,
+  avis: null,
   connexion: async () => {},
   inscription: async () => {},
   deconnexion: async () => {},
@@ -71,10 +75,16 @@ export function oublierCompte(identifiant: string): void {
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profil, setProfil] = useState<Profil | null | undefined>(undefined)
+  const [avis, setAvis] = useState<string | null>(null)
+  // Une session qui tombe en cours d'usage mérite une explication ; une
+  // première ouverture, non.
+  const connecte = useRef(false)
 
   const rafraichir = useCallback(async () => {
     try {
-      setProfil(await api.moi())
+      const nouveau = await api.moi()
+      connecte.current = true
+      setProfil(nouveau)
     } catch {
       // Session absente ou expirée, ou serveur injoignable : dans les trois
       // cas, il n'y a rien à afficher d'autre que l'écran de connexion.
@@ -84,7 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void rafraichir()
-    const perdue = () => setProfil(null)
+    const perdue = () => {
+      if (connecte.current) setAvis('Session expirée · reconnectez-vous')
+      connecte.current = false
+      setProfil(null)
+    }
     window.addEventListener(SESSION_PERDUE, perdue)
     return () => window.removeEventListener(SESSION_PERDUE, perdue)
   }, [rafraichir])
@@ -92,11 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const entrer = async (corps: Identifiants, appel: (c: Identifiants) => Promise<Profil>) => {
     const nouveau = await appel(corps)
     retenirCompte(nouveau.identifiant)
+    connecte.current = true
+    setAvis(null)
     setProfil(nouveau)
   }
 
   const valeur: Contexte = {
     profil,
+    avis,
     connexion: (corps) => entrer(corps, api.connexion),
     inscription: (corps) => entrer(corps, api.inscription),
     deconnexion: async () => {
@@ -105,6 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } finally {
         // Même si le serveur ne répond pas, l'application doit se fermer ici :
         // l'utilisateur a demandé à sortir.
+        connecte.current = false
+        setAvis('Session close · rien n’a été supprimé')
         setProfil(null)
       }
     },

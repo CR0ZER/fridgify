@@ -58,9 +58,12 @@ async function requete<T>(chemin: string, options: RequestInit = {}): Promise<T>
   }
   if (!reponse.ok) {
     const message = await messageErreur(reponse)
-    // L'authentification elle-même renvoie 401 quand le mot de passe est faux :
-    // ce n'est pas une session perdue, c'est une tentative refusée.
-    if (reponse.status === 401 && !chemin.startsWith('/auth/')) {
+    // Un 401 signe une session absente ou expirée, d'où qu'il vienne : l'écran
+    // affiché n'a alors rien à réessayer, il faut ramener à la connexion. Seuls
+    // la connexion et l'inscription y échappent : leur 401 dit « mot de passe
+    // refusé », pas « session perdue ».
+    const tentative = chemin === '/auth/connexion' || chemin === '/auth/inscription'
+    if (reponse.status === 401 && !tentative) {
       window.dispatchEvent(new Event(SESSION_PERDUE))
     }
     throw new ApiError(message, reponse.status)

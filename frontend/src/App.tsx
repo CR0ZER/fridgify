@@ -34,7 +34,7 @@ export default function App() {
 }
 
 function Application() {
-  const { profil } = useAuth()
+  const { profil, avis } = useAuth()
   const { pathname } = useLocation()
   // La page défile sur le document : sans cela, un écran s'ouvrirait à la
   // hauteur où l'on avait laissé le précédent.
@@ -45,7 +45,7 @@ function Application() {
   // Session en cours de vérification : ni l'application ni la connexion, sinon
   // l'écran de connexion clignoterait à chaque ouverture.
   if (profil === undefined) return <Squelette />
-  if (profil === null) return <Connexion />
+  if (profil === null) return <Connexion message={avis} />
 
   return (
     <Verrou>
