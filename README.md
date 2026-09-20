@@ -88,7 +88,8 @@ plus jamais écrasée.
 
 **Scan de ticket de caisse.** Une photo du ticket suffit : le serveur en
 extrait les produits frais avec Gemini, propose une date pour chacun, et rien
-n'est enregistré sans validation ligne par ligne.
+n'est enregistré sans validation ligne par ligne. Cinq scans par compte et par
+jour, la clé d'analyse étant partagée par tout le serveur.
 
 **Plats à préparer.** Un plat réserve des produits du frigo sans les
 consommer. L'application calcule ce qui reste libre, la date avant laquelle
@@ -100,15 +101,17 @@ comme un reste maison.
 pour les cuisiner. Volontairement indépendante du frigo.
 
 **Alerte quotidienne.** Une notification Web Push chaque matin à 9 h pour ce
-qui périme sous un jour ou est déjà périmé — rien si le frigo est sain.
+qui périme sous un jour ou est déjà périmé. Chaque compte reçoit la sienne, et
+rien ne part si le frigo est sain.
 
 **Historique.** Part consommée contre part jetée, produits les plus gaspillés
 et dernières sorties.
 
 **Thème clair et sombre.** Selon le téléphone, ou forcé dans les réglages.
 
-**Installable et hors ligne.** Ajoutée à l'écran d'accueil de l'iPhone, elle
-se comporte comme une application native.
+**Installable.** Ajoutée à l'écran d'accueil de l'iPhone, elle démarre comme
+une application native : l'interface est mise en cache, les données viennent
+toujours du serveur.
 
 ## Architecture
 
@@ -131,17 +134,16 @@ Navigateur (iPhone, ordinateur…)
                                                                           (Apple, Google)
 ```
 
-- **Un seul processus permanent**, `fridgify-api` — les noms de services, de
-  chemins et de fichiers sont restés tels quels après le renommage de
-  l'application, pour ne pas casser une installation existante. Un minuteur systemd le
-  rejoint une fois par jour, le temps d'envoyer l'alerte, puis s'arrête.
+- **Un seul processus permanent**, le service `fridgify-api` — les noms
+  techniques ont gardé l'ancien nom du projet. Un minuteur systemd le rejoint
+  une fois par jour, le temps d'envoyer l'alerte, puis s'arrête.
 - **Le frontend est statique** : compilé une fois, servi par nginx. Aucun
   serveur Node ne tourne en production.
 - **Toute la logique métier vit dans le backend**, couverte par des tests. Le
   navigateur n'affiche que ce que l'API calcule.
-- **Tailscale n'est là que pour le HTTPS.** Les notifications et le mode hors
-  ligne exigent un « contexte sécurisé » ; l'accès à distance n'en est qu'un
-  effet de bord.
+- **Tailscale n'est là que pour le HTTPS.** Les notifications, l'installation
+  sur l'écran d'accueil et le verrouillage par Face ID exigent un « contexte
+  sécurisé » ; l'accès à distance n'en est qu'un effet de bord.
 
 | Dossier     | Contenu                                                        |
 | ----------- | -------------------------------------------------------------- |
@@ -174,12 +176,16 @@ sudo ./deploy/install.sh   # venv, services systemd, site nginx, clés de notifi
 ./deploy/deploy.sh         # compile le frontend et le publie
 ```
 
-L'application répond alors sur `http://<ip-de-la-raspberry>/`. Créez enfin votre
-compte — le premier créé hérite de l'inventaire qui existait avant les comptes :
+L'application répond alors sur `http://<ip-de-la-raspberry>/`. Il ne reste qu'à
+créer votre compte, depuis l'écran de connexion ou en ligne de commande :
 
 ```bash
 cd backend && .venv/bin/python -m app.comptes creer <identifiant>
 ```
+
+Sur une installation qui tournait avant la mise en place des comptes, le premier
+compte créé hérite de l'inventaire existant : créez le vôtre avant d'ouvrir le
+serveur à d'autres personnes.
 
 ### Activer le HTTPS et les notifications
 
