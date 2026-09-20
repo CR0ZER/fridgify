@@ -55,9 +55,9 @@ compte à rebours disent en un coup d'œil ce qui doit partir aujourd'hui.</sub>
 ## Pourquoi
 
 Un yaourt oublié au fond du frigo ne prévient pas. Frigo tient l'inventaire
-à jour, calcule ce qui presse et le dit — sans compte en ligne, sans
-abonnement, sans que les données quittent la maison. Tout tourne sur une
-Raspberry Pi ; le téléphone n'est qu'une fenêtre dessus.
+à jour, calcule ce qui presse et le dit — sans service tiers, sans abonnement,
+sans que les données quittent la maison. Le compte que vous créez vit sur votre
+Raspberry Pi, comme le reste ; le téléphone n'est qu'une fenêtre dessus.
 
 ## Fonctionnalités
 
