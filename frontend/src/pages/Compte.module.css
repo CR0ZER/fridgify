@@ -1,0 +1,108 @@
+.entete {
+  padding: 10px 22px 20px;
+}
+
+.identite {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 14px;
+}
+
+.avatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 700 19px var(--font-mono);
+}
+
+.nom {
+  flex: 1;
+  min-width: 0;
+  font: 800 28px/0.98 var(--font-display);
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.lignes {
+  border-top: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+
+.ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 52px;
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+
+.libre {
+  flex: 1;
+}
+
+.valeur {
+  flex: none;
+  text-align: right;
+  font: 500 13px var(--font-mono);
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.aide {
+  padding: 10px 22px 0;
+  font: 400 11.5px/1.5 var(--font-display);
+  color: var(--muted);
+}
+
+.donnees {
+  margin: 24px 22px 0;
+}
+
+.donneesCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 15px 14px;
+}
+
+.donneesCorps p {
+  display: flex;
+  gap: 10px;
+  font: 400 12.5px/1.5 var(--font-display);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.donneesCorps p::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 7px;
+  background: var(--ink);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 22px 22px 34px;
+}
+
+.actions :global(.btn) {
+  width: 100%;
+}
+
+.retirer {
+  font-weight: 500;
+  color: var(--muted);
+}

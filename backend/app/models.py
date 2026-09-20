@@ -233,3 +233,26 @@ class ResultatEnvoi(BaseModel):
     envoyes: int
     supprimes: int
     echecs: list[str] = Field(default_factory=list)
+
+
+class Identifiants(BaseModel):
+    """Ce que l'ecran de connexion envoie."""
+
+    identifiant: str = Field(min_length=1, max_length=40)
+    mot_de_passe: str = Field(min_length=1, max_length=200)
+    #: Faux : la session meurt a la fermeture de l'application.
+    rester_connecte: bool = True
+
+
+class Profil(BaseModel):
+    """Le compte connecte, tel que l'ecran « Compte » l'affiche."""
+
+    identifiant: str
+    date_creation: str
+    #: Taille du frigo, pour la ligne « 24 lots · 61 unites ».
+    lots: int = 0
+    unites: int = 0
+    #: Fin de la session en cours, au format ISO.
+    expiration: str
+    #: Scans de ticket encore disponibles aujourd'hui.
+    scans_restants: int = 0

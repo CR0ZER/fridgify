@@ -1,5 +1,6 @@
 import type {
   Categorie,
+  Identifiants,
   Course,
   DisponibiliteLot,
   EtatPush,
@@ -9,6 +10,7 @@ import type {
   PreparationPlat,
   Produit,
   ProduitDetecte,
+  Profil,
   ResultatEnvoi,
   Stats,
   StatutFin,
@@ -23,6 +25,13 @@ import type {
 const BASE = '/api'
 
 const INJOIGNABLE = 'Serveur injoignable. La Raspberry est-elle allumée ?'
+
+/**
+ * Signale une session devenue invalide : expirée, fermée ailleurs, ou effacée
+ * par un changement de mot de passe. Le fournisseur d'authentification écoute
+ * et ramène à l'écran de connexion, depuis n'importe quel écran.
+ */
+export const SESSION_PERDUE = 'fridgify:session-perdue'
 
 export class ApiError extends Error {
   constructor(
@@ -48,7 +57,13 @@ async function requete<T>(chemin: string, options: RequestInit = {}): Promise<T>
     throw new ApiError(INJOIGNABLE, reponse.status)
   }
   if (!reponse.ok) {
-    throw new ApiError(await messageErreur(reponse), reponse.status)
+    const message = await messageErreur(reponse)
+    // L'authentification elle-même renvoie 401 quand le mot de passe est faux :
+    // ce n'est pas une session perdue, c'est une tentative refusée.
+    if (reponse.status === 401 && !chemin.startsWith('/auth/')) {
+      window.dispatchEvent(new Event(SESSION_PERDUE))
+    }
+    throw new ApiError(message, reponse.status)
   }
 
   if (reponse.status === 204) return undefined as T
@@ -87,6 +102,14 @@ export type Health = {
 
 export const api = {
   health: () => requete<Health>('/health'),
+
+  inscription: (corps: Identifiants) => requete<Profil>('/auth/inscription', json('POST', corps)),
+
+  connexion: (corps: Identifiants) => requete<Profil>('/auth/connexion', json('POST', corps)),
+
+  deconnexion: () => requete<void>('/auth/deconnexion', { method: 'POST' }),
+
+  moi: () => requete<Profil>('/auth/moi'),
 
   listerProduits: () => requete<Produit[]>('/produits'),
 

@@ -58,14 +58,17 @@ def configure() -> bool:
     return bool(settings.vapid_public_key and settings.vapid_private_key)
 
 
-def lister_abonnements(db: sqlite3.Connection) -> list[sqlite3.Row]:
+def lister_abonnements(db: sqlite3.Connection, utilisateur_id: int) -> list[sqlite3.Row]:
     return db.execute(
-        "SELECT * FROM abonnements_push ORDER BY date_creation ASC;"
+        "SELECT * FROM abonnements_push WHERE utilisateur_id = ? ORDER BY date_creation ASC;",
+        (utilisateur_id,),
     ).fetchall()
 
 
-def envoyer_a_tous(db: sqlite3.Connection, titre: str, corps: str, url: str = "/") -> dict:
-    """Diffuse une notification a tous les appareils abonnes.
+def envoyer_a_tous(
+    db: sqlite3.Connection, utilisateur_id: int, titre: str, corps: str, url: str = "/"
+) -> dict:
+    """Diffuse une notification aux appareils d'un compte.
 
     Renvoie le detail des envois. Un abonnement que le service de push declare
     disparu (404) ou expire (410) est supprime : c'est la seule facon d'apprendre
@@ -81,7 +84,7 @@ def envoyer_a_tous(db: sqlite3.Connection, titre: str, corps: str, url: str = "/
 
     envoyes, perimes, echecs = 0, [], []
 
-    for abonnement in lister_abonnements(db):
+    for abonnement in lister_abonnements(db, utilisateur_id):
         try:
             webpush(
                 subscription_info={

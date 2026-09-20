@@ -17,6 +17,11 @@ l'architecture complète.
   latin) pour rester disponibles hors ligne.
 - **Thème** — clair, sombre ou « selon le téléphone », choisi dans Réglages
   (`utils/theme.ts`, dupliqué en ligne dans `index.html` pour éviter un flash).
+- **Comptes** — un compte, un frigo. Toute requête qui touche à des données
+  passe par `Depends(utilisateur_courant)` et filtre son SQL sur
+  `utilisateur_id` : sans ce filtre, un identifiant deviné ouvre le frigo du
+  voisin. Mots de passe, sessions et jetons de service vivent dans
+  `backend/app/comptes.py`, les gardes dans `backend/app/auth.py`.
 - **Interface et code en français** — libellés, noms de fonctions, commentaires
   et messages d'erreur, à l'image de l'existant.
 - **Catégories** — liste fermée dans `backend/app/categories.py`, source unique

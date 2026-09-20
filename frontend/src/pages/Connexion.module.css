@@ -1,0 +1,278 @@
+/* L'écran de connexion n'a pas de barre de navigation : rien à réserver en bas. */
+.page {
+  padding-bottom: calc(var(--safe-bottom) + 30px);
+}
+
+/* Avis après une déconnexion ou un retrait de compte. */
+.avis {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0 22px;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.14);
+  font: 500 10.5px/1.45 var(--font-mono);
+  color: var(--ink);
+  animation: fondu 0.2s ease-out;
+}
+
+.avis::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  background: var(--ink);
+}
+
+.enseigne {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  padding: 32px 22px 24px;
+}
+
+/* Les trois barres du logo, redessinées à la taille du titre. */
+.marque {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+}
+
+.marque span {
+  height: 100%;
+}
+
+.marque span:nth-child(1) {
+  width: 11px;
+  background: var(--acc);
+}
+
+.marque span:nth-child(2) {
+  width: 6px;
+  background: var(--ink);
+}
+
+.marque span:nth-child(3) {
+  width: 3px;
+  background: rgba(var(--ink-rgb), 0.3);
+}
+
+.titre {
+  font: 800 40px/0.9 var(--font-display);
+  letter-spacing: -0.05em;
+  color: var(--ink);
+}
+
+.section {
+  padding: 0 22px 10px;
+}
+
+.liste {
+  border-top: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+
+.compte {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  min-height: 76px;
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+  background: var(--surf);
+  text-align: left;
+}
+
+.avatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 700 15px var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.avatarGrand {
+  width: 52px;
+  height: 52px;
+  font-size: 17px;
+}
+
+.avatarVide {
+  border: 1.5px dashed rgba(var(--ink-rgb), 0.35);
+  background: transparent;
+  color: var(--ink);
+  font: 300 21px var(--font-display);
+}
+
+.compteNom {
+  flex: 1;
+  min-width: 0;
+  font: 700 19px/1.1 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.autre {
+  flex: 1;
+  font: 600 15px var(--font-display);
+  color: var(--ink);
+}
+
+.chevron {
+  flex: none;
+  font: 400 11px var(--font-mono);
+  color: var(--muted);
+}
+
+.note {
+  padding: 26px 22px 30px;
+  font: 400 11px/1.6 var(--font-mono);
+  color: var(--muted);
+}
+
+/* ---- Formulaires ------------------------------------------------------- */
+
+.retourLigne {
+  padding: 2px 22px 0;
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 30px 22px 24px;
+}
+
+.entete .marque {
+  height: 52px;
+}
+
+.enteteTextes {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.titreCompte {
+  font: 800 27px/1 var(--font-display);
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.champs {
+  border-top: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+
+.ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 54px;
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+
+.ligne > :global(.etiquette) {
+  flex: none;
+  width: 104px;
+}
+
+/* Libellé d'une ligne sans champ de saisie : il prend toute la largeur. */
+.ligne > .libre {
+  flex: 1;
+  width: auto;
+}
+
+.valeur {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  text-align: right;
+  font: 600 16px var(--font-display);
+  color: var(--ink);
+}
+
+.valeur::placeholder {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.motDePasse {
+  font: 600 16px var(--font-mono);
+  letter-spacing: 0.16em;
+}
+
+.ligneConfirmation {
+  padding-bottom: 13px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+
+.ligneConfirmation .ligne {
+  border-bottom: none;
+}
+
+.indice {
+  padding: 0 22px;
+  text-align: right;
+  font: 400 10.5px/1.45 var(--font-display);
+  color: var(--muted);
+}
+
+.erreur {
+  margin: 18px 22px 0;
+  padding: 8px 0 8px 13px;
+  border-left: 4px solid var(--danger);
+  animation: fondu 0.16s ease-out;
+}
+
+.erreurTitre {
+  font: 700 9px var(--font-mono);
+  letter-spacing: 0.14em;
+  color: var(--danger);
+  text-transform: uppercase;
+}
+
+.erreurCorps {
+  margin-top: 5px;
+  font: 400 12.5px/1.5 var(--font-display);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.valider {
+  padding: 22px 22px 0;
+}
+
+.valider :global(.btn) {
+  width: 100%;
+}
+
+.liens {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 16px 22px 30px;
+}
+
+.discret {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.pied {
+  padding: 14px 22px 30px;
+  font-size: 12px;
+}

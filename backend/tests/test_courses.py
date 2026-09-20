@@ -2,8 +2,6 @@
 
 from datetime import date
 
-from app.db import connexion, init_db
-
 
 def _envie(client, nom, note=None):
     return client.post("/api/courses", json={"nom": nom, "note": note})
@@ -84,9 +82,11 @@ def test_vider_les_achetes_garde_le_reste(client):
     assert [c["nom"] for c in client.get("/api/courses").json()] == ["À acheter"]
 
 
-def test_ancien_prompt_de_recettes_purge_au_demarrage(client):
-    client.put("/api/settings/prompt_recipes", json={"value": "vieux prompt"})
-    init_db()
+def test_reglages_propres_a_chaque_compte(client, voisin):
+    """Le prompt de scan se regle par compte, pas pour le serveur entier."""
+    client.put("/api/settings/prompt_scan", json={"value": "mon prompt"})
 
-    with connexion() as conn:
-        assert conn.execute("SELECT 1 FROM settings WHERE key = 'prompt_recipes';").fetchone() is None
+    assert client.get("/api/settings/prompt_scan").json()["value"] == "mon prompt"
+    # La voisine retombe sur le defaut du serveur, pas sur le prompt du premier.
+    defaut = voisin.get("/api/settings/defaults").json()["prompt_scan"]
+    assert voisin.get("/api/settings/prompt_scan").json()["value"] == defaut

@@ -3,8 +3,10 @@ import sqlite3
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import ValidationError
 
-from .. import gemini
+from .. import comptes, gemini
+from ..auth import utilisateur_courant
 from ..categories import normaliser
+from ..comptes import Utilisateur
 from ..db import get_db
 from ..models import ProduitDetecte
 from ..prompts import CLE_PROMPT_SCAN
@@ -20,8 +22,18 @@ MIMES_ACCEPTES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/
 async def scanner_ticket(
     image: UploadFile = File(...),
     db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
 ) -> list[ProduitDetecte]:
     """Photo de ticket -> liste de produits frais detectes, prets a valider."""
+    # La cle Gemini est partagee par tous les comptes du serveur : sans plafond,
+    # un seul compte pourrait epuiser le quota de tout le monde.
+    if comptes.scans_restants(db, utilisateur.id) == 0:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            f"Limite de {comptes.SCANS_PAR_JOUR} scans par jour atteinte."
+            " Ajoutez les produits à la main, ou réessayez demain.",
+        )
+
     mime = (image.content_type or "").lower()
     if mime not in MIMES_ACCEPTES:
         raise HTTPException(
@@ -38,7 +50,10 @@ async def scanner_ticket(
             f"Image trop lourde ({len(contenu) // 1024} Ko, maximum {TAILLE_MAX // 1024} Ko).",
         )
 
-    prompt = lire_reglage(db, CLE_PROMPT_SCAN) or ""
+    prompt = lire_reglage(db, utilisateur.id, CLE_PROMPT_SCAN) or ""
+    # Compte avant l'appel : un scan qui echoue cote Gemini a quand meme
+    # consomme du quota chez le fournisseur.
+    comptes.compter_scan(db, utilisateur.id)
     brut = await gemini.analyser_ticket(contenu, mime, prompt)
     detectes = _valider(brut, ProduitDetecte, "produits detectes")
 

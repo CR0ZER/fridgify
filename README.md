@@ -41,6 +41,11 @@ Raspberry Pi ; le téléphone n'est qu'une fenêtre dessus.
 
 ## Fonctionnalités
 
+**Un compte, un frigo.** Plusieurs personnes partagent le même serveur sans
+jamais se croiser : inventaire, plats, courses, historique et notifications sont
+cloisonnés par compte. Identifiant et mot de passe, session gardée sur
+l'appareil, et Face ID ou empreinte à l'ouverture si le téléphone le propose.
+
 **Inventaire par lots et par unités.** Un pack de 6 yaourts est un lot de 6
 unités identiques. Le nom et la catégorie se règlent pour tout le lot ; la
 date limite, l'ouverture et la sortie se gèrent unité par unité. Chaque lot
@@ -147,7 +152,12 @@ sudo ./deploy/install.sh   # venv, services systemd, site nginx, clés de notifi
 ./deploy/deploy.sh         # compile le frontend et le publie
 ```
 
-L'application répond alors sur `http://<ip-de-la-raspberry>/`.
+L'application répond alors sur `http://<ip-de-la-raspberry>/`. Créez enfin votre
+compte — le premier créé hérite de l'inventaire qui existait avant les comptes :
+
+```bash
+cd backend && .venv/bin/python -m app.comptes creer <identifiant>
+```
 
 ### Activer le HTTPS et les notifications
 
@@ -182,6 +192,8 @@ comme secours, sans notifications.
 | Prochaine alerte programmée            | `systemctl list-timers fridgify-notifications.timer`       |
 | Prévisualiser l'alerte sans l'envoyer  | `cd backend && .venv/bin/python -m app.notifications --simuler` |
 | Forcer l'envoi de l'alerte du jour     | `cd backend && .venv/bin/python -m app.notifications --force` |
+| Lister les comptes                     | `cd backend && .venv/bin/python -m app.comptes lister`     |
+| Réinitialiser un mot de passe          | `cd backend && .venv/bin/python -m app.comptes mot-de-passe <identifiant>` |
 
 Sauvegarder la base (la Raspberry n'a pas besoin de l'outil `sqlite3`) :
 
@@ -229,11 +241,18 @@ palettes. Le détail est dans [`AGENTS.md`](AGENTS.md).
 ## API
 
 Documentation interactive générée par FastAPI : `http://<ip>:8000/docs`.
-Chaque requête porte le secret de `backend/.env` dans le header `X-API-Key` —
-sauf `/api/health`, qui sert de sonde.
+
+Deux gardes se succèdent. Le header `X-API-Key`, ajouté par nginx, dit que la
+requête vient d'un appareil autorisé ; il protège le port 8000, joignable depuis
+tout le réseau local. La **session** dit ensuite de quel compte il s'agit, et
+donc quel frigo répond. Seul `/api/health` se passe des deux.
+
+Une machine — l'écran d'affichage du salon, un script — présente à la place un
+**jeton de service**, créé sur le serveur et rattaché à un compte :
 
 ```bash
-curl -H "X-API-Key: $CLE" http://<ip>:8000/api/produits
+cd backend && .venv/bin/python -m app.comptes jeton florian "Écran du salon"
+curl -H "X-API-Key: $CLE" -H "X-Service-Token: $JETON" http://<ip>:8000/api/produits
 ```
 
 <details>
@@ -242,6 +261,10 @@ curl -H "X-API-Key: $CLE" http://<ip>:8000/api/produits
 | Méthode             | Chemin                          | Rôle                                         |
 | ------------------- | ------------------------------- | -------------------------------------------- |
 | `GET`               | `/api/health`                   | Sonde, sans clé                              |
+| `POST`              | `/api/auth/inscription`         | Crée un compte et ouvre sa session           |
+| `POST`              | `/api/auth/connexion`           | Ouvre une session (cookie)                   |
+| `POST`              | `/api/auth/deconnexion`         | Ferme la session                             |
+| `GET`               | `/api/auth/moi`                 | Le compte connecté et la taille de son frigo |
 | `GET`               | `/api/produits`                 | Inventaire actif, trié par urgence           |
 | `DELETE`            | `/api/produits`                 | Vide le frigo                                |
 | `PATCH` / `DELETE`  | `/api/produits/{id}`            | Modifie / supprime une unité                 |
@@ -272,6 +295,14 @@ curl -H "X-API-Key: $CLE" http://<ip>:8000/api/produits
 - **Aucun secret dans le navigateur.** La clé Gemini ne quitte pas le serveur ;
   la clé d'API est ajoutée par nginx et n'apparaît pas dans le JavaScript
   servi.
+- **Mots de passe hachés avec `scrypt`**, sel par compte, comparaison en temps
+  constant. Trois essais ratés bloquent la connexion une minute.
+- **Session dans un cookie `httpOnly`**, inaccessible au JavaScript, marqué
+  `Secure` dès que la page est servie en HTTPS et `SameSite=Lax` pour couper les
+  requêtes venues d'un autre site.
+- **Frigos cloisonnés.** Chaque requête est filtrée par compte jusque dans le
+  SQL ; un identifiant deviné ne donne rien. Le scan de ticket est plafonné à
+  cinq par compte et par jour, la clé Gemini étant partagée.
 - **Aucune donnée dans le cloud.** L'inventaire vit dans un fichier SQLite sur
   la Raspberry. Seule la photo d'un ticket est envoyée à Gemini, au moment du
   scan.

@@ -12,6 +12,7 @@ export const SECTIONS = [
   { chemin: '/courses', libelle: 'Courses' },
   { chemin: '/historique', libelle: 'Historique' },
   { chemin: '/reglages', libelle: 'Réglages' },
+  { chemin: '/compte', libelle: 'Compte' },
 ]
 
 /** Numéro de section « 01 »…« 07 », repris en tête de chaque écran. */

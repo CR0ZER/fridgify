@@ -7,6 +7,7 @@ from .auth import exiger_api_key
 from .config import get_settings
 from .db import init_db
 from .push import configure as push_configure
+from .routers import auth as routes_auth
 from .routers import courses, llm, plats, produits, push, reglages
 
 
@@ -45,8 +46,11 @@ def health() -> dict:
     }
 
 
-# Tout le reste de l'API exige le header X-API-Key.
+# Tout le reste de l'API exige le header X-API-Key : c'est le garde-barriere de
+# la machine. Les routes qui touchent a un frigo exigent en plus une session ou
+# un jeton de service, qui designe le compte (voir app/auth.py).
 protege = [Depends(exiger_api_key)]
+app.include_router(routes_auth.router, prefix="/api", dependencies=protege)
 app.include_router(produits.router, prefix="/api", dependencies=protege)
 app.include_router(produits.router_lots, prefix="/api", dependencies=protege)
 app.include_router(produits.stats_router, prefix="/api", dependencies=protege)

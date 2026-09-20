@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { api } from '../api/client'
 import type { Categorie } from '../api/types'
+import { useAuth } from '../components/Authentification'
 import { numeroSection } from '../components/BarreNavigation'
 import Stepper from '../components/Stepper'
 import { ajouterJoursISO, aujourdHuiISO, dateCourte, pluriel } from '../utils/date'
@@ -32,6 +33,7 @@ export default function Scan() {
   const appareilPhoto = useRef<HTMLInputElement>(null)
   const phototheque = useRef<HTMLInputElement>(null)
   const analyseEnCours = useRef<AbortController | null>(null)
+  const { profil, rafraichir } = useAuth()
   const naviguer = useNavigate()
 
   useEffect(() => {
@@ -81,6 +83,9 @@ export default function Scan() {
       )
       setOuverte(0)
       setEtape('resultats')
+      // Le scan vient de consommer un jeton du quota partagé : le compteur
+      // affiché doit suivre.
+      void rafraichir()
     } catch (e) {
       if (controleur.signal.aborted) return
       setErreur(e instanceof Error ? e.message : 'Le scan a échoué.')
@@ -151,6 +156,13 @@ export default function Scan() {
             Photographiez le ticket entier, bien à plat. Le serveur en extrait les produits frais
             destinés au frigo. Rien n'est enregistré sans votre validation.
           </p>
+          {profil && (
+            <p className="etiquette">
+              {profil.scans_restants > 0
+                ? `${pluriel(profil.scans_restants, 'scan')} restant${profil.scans_restants > 1 ? 's' : ''} aujourd'hui`
+                : "Plus de scan aujourd'hui · la clé d'analyse est partagée"}
+            </p>
+          )}
           <button type="button" className="btn btn-plein btn-grand" onClick={() => appareilPhoto.current?.click()}>
             Prendre une photo
           </button>

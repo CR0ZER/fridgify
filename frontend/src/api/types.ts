@@ -128,3 +128,21 @@ export type ResultatEnvoi = {
   supprimes: number
   echecs: string[]
 }
+
+/** Le compte connecté, tel que l'écran « Compte » l'affiche. */
+export type Profil = {
+  identifiant: string
+  date_creation: string
+  lots: number
+  unites: number
+  /** Fin de la session en cours, au format ISO. */
+  expiration: string
+  /** Scans de ticket encore disponibles aujourd'hui. */
+  scans_restants: number
+}
+
+export type Identifiants = {
+  identifiant: string
+  mot_de_passe: string
+  rester_connecte: boolean
+}

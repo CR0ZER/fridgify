@@ -3,6 +3,8 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
+from ..auth import utilisateur_courant
+from ..comptes import Utilisateur
 from ..db import get_db
 from ..models import (
     DisponibiliteLot,
@@ -23,7 +25,7 @@ def _aujourdhui() -> str:
     return date.today().isoformat()
 
 
-def _stock_par_lot(db: sqlite3.Connection) -> dict[str, dict]:
+def _stock_par_lot(db: sqlite3.Connection, utilisateur: Utilisateur) -> dict[str, dict]:
     """Etat courant du frigo, agrege par lot.
 
     Le stock est un nombre d'unites : chaque ligne d'inventaire_frigo represente
@@ -37,14 +39,17 @@ def _stock_par_lot(db: sqlite3.Connection) -> dict[str, dict]:
                COUNT(*) AS stock,
                MIN(date_peremption_effective) AS dlc
         FROM inventaire_frigo
-        WHERE statut_fin IS NULL
+        WHERE utilisateur_id = ? AND statut_fin IS NULL
         GROUP BY lot_id;
-        """
+        """,
+        (utilisateur.id,),
     ).fetchall()
     return {ligne["lot_id"]: dict(ligne) for ligne in lignes}
 
 
-def _reserve_par_lot(db: sqlite3.Connection, hors_plat: int | None = None) -> dict[str, int]:
+def _reserve_par_lot(
+    db: sqlite3.Connection, utilisateur: Utilisateur, hors_plat: int | None = None
+) -> dict[str, int]:
     """Quantites deja affectees a des plats encore a preparer.
 
     `hors_plat` exclut un plat du calcul : lors d'une modification, ses propres
@@ -54,9 +59,9 @@ def _reserve_par_lot(db: sqlite3.Connection, hors_plat: int | None = None) -> di
         SELECT i.lot_id, SUM(i.quantite) AS reserve
         FROM plat_ingredients i
         JOIN plats p ON p.id = i.plat_id
-        WHERE p.statut = 'prevu'
+        WHERE p.statut = 'prevu' AND p.utilisateur_id = ?
     """
-    parametres: list = []
+    parametres: list = [utilisateur.id]
     if hors_plat is not None:
         requete += " AND p.id != ?"
         parametres.append(hors_plat)
@@ -67,13 +72,14 @@ def _reserve_par_lot(db: sqlite3.Connection, hors_plat: int | None = None) -> di
 
 def _verifier_disponibilite(
     db: sqlite3.Connection,
+    utilisateur: Utilisateur,
     ingredients: list[IngredientReserve],
     hors_plat: int | None = None,
 ) -> None:
     """Refuse d'affecter a un plat plus que ce que le frigo contient."""
     lots_vus: set[str] = set()
-    stock = _stock_par_lot(db)
-    reserve = _reserve_par_lot(db, hors_plat)
+    stock = _stock_par_lot(db, utilisateur)
+    reserve = _reserve_par_lot(db, utilisateur, hors_plat)
 
     for ingredient in ingredients:
         if ingredient.lot_id in lots_vus:
@@ -98,14 +104,18 @@ def _verifier_disponibilite(
             )
 
 
-def _charger_plat(db: sqlite3.Connection, plat_id: int) -> Plat:
-    ligne = db.execute("SELECT * FROM plats WHERE id = ?;", (plat_id,)).fetchone()
+def _charger_plat(db: sqlite3.Connection, utilisateur: Utilisateur, plat_id: int) -> Plat:
+    ligne = db.execute(
+        "SELECT * FROM plats WHERE id = ? AND utilisateur_id = ?;", (plat_id, utilisateur.id)
+    ).fetchone()
     if ligne is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Plat introuvable.")
-    return _composer(db, ligne, _stock_par_lot(db))
+    return _composer(db, utilisateur, ligne, _stock_par_lot(db, utilisateur))
 
 
-def _composer(db: sqlite3.Connection, ligne: sqlite3.Row, stock: dict[str, dict]) -> Plat:
+def _composer(
+    db: sqlite3.Connection, utilisateur: Utilisateur, ligne: sqlite3.Row, stock: dict[str, dict]
+) -> Plat:
     """Assemble un plat avec ses ingredients resolus et sa date limite."""
     reserves = db.execute(
         "SELECT lot_id, quantite FROM plat_ingredients WHERE plat_id = ? ORDER BY rowid;",
@@ -123,7 +133,7 @@ def _composer(db: sqlite3.Connection, ligne: sqlite3.Row, stock: dict[str, dict]
             IngredientDetaille(
                 lot_id=reserve["lot_id"],
                 quantite=int(reserve["quantite"]),
-                nom=lot["nom"] if lot else _nom_historique(db, reserve["lot_id"]),
+                nom=lot["nom"] if lot else _nom_historique(db, utilisateur, reserve["lot_id"]),
                 categorie=lot["categorie"] if lot else None,
                 date_peremption_effective=lot["dlc"] if lot else None,
                 stock=disponible,
@@ -141,7 +151,7 @@ def _composer(db: sqlite3.Connection, ligne: sqlite3.Row, stock: dict[str, dict]
         date_creation=ligne["date_creation"],
         date_preparation=ligne["date_preparation"],
         lot_resultat=ligne["lot_resultat"],
-        portions=_compter_unites(db, ligne["lot_resultat"]),
+        portions=_compter_unites(db, utilisateur, ligne["lot_resultat"]),
         ingredients=ingredients,
         # La date limite est celle de l'ingredient le plus presse : au-dela, le
         # plat ne peut plus etre realise tel qu'il a ete prevu.
@@ -149,7 +159,7 @@ def _composer(db: sqlite3.Connection, ligne: sqlite3.Row, stock: dict[str, dict]
     )
 
 
-def _nom_historique(db: sqlite3.Connection, lot_id: str) -> str:
+def _nom_historique(db: sqlite3.Connection, utilisateur: Utilisateur, lot_id: str) -> str:
     """Nom d'un lot sorti du frigo.
 
     Consommer ou jeter une unite ne l'efface pas : elle garde son nom, marquee
@@ -158,17 +168,21 @@ def _nom_historique(db: sqlite3.Connection, lot_id: str) -> str:
     de saisie, frigo vide) fait perdre le nom.
     """
     ligne = db.execute(
-        "SELECT MIN(nom) AS nom FROM inventaire_frigo WHERE lot_id = ?;", (lot_id,)
+        "SELECT MIN(nom) AS nom FROM inventaire_frigo WHERE lot_id = ? AND utilisateur_id = ?;",
+        (lot_id, utilisateur.id),
     ).fetchone()
     return ligne["nom"] or "Produit retiré du frigo"
 
 
-def _compter_unites(db: sqlite3.Connection, lot_id: str | None) -> int | None:
+def _compter_unites(
+    db: sqlite3.Connection, utilisateur: Utilisateur, lot_id: str | None
+) -> int | None:
     """Portions rangees au frigo par la preparation, sorties comprises."""
     if lot_id is None:
         return None
     return db.execute(
-        "SELECT COUNT(*) FROM inventaire_frigo WHERE lot_id = ?;", (lot_id,)
+        "SELECT COUNT(*) FROM inventaire_frigo WHERE lot_id = ? AND utilisateur_id = ?;",
+        (lot_id, utilisateur.id),
     ).fetchone()[0]
 
 
@@ -184,10 +198,13 @@ def _ecrire_ingredients(
 
 
 @router_dispo.get("/disponibilites", response_model=list[DisponibiliteLot], tags=["plats"])
-def lister_disponibilites(db: sqlite3.Connection = Depends(get_db)) -> list[DisponibiliteLot]:
+def lister_disponibilites(
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> list[DisponibiliteLot]:
     """Ce que chaque lot peut encore fournir a un nouveau plat."""
-    stock = _stock_par_lot(db)
-    reserve = _reserve_par_lot(db)
+    stock = _stock_par_lot(db, utilisateur)
+    reserve = _reserve_par_lot(db, utilisateur)
 
     lots = [
         DisponibiliteLot(
@@ -207,17 +224,22 @@ def lister_disponibilites(db: sqlite3.Connection = Depends(get_db)) -> list[Disp
 
 
 @router.get("", response_model=list[Plat])
-def lister_plats(db: sqlite3.Connection = Depends(get_db)) -> list[Plat]:
-    stock = _stock_par_lot(db)
+def lister_plats(
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> list[Plat]:
+    stock = _stock_par_lot(db, utilisateur)
     lignes = db.execute(
         """
         SELECT * FROM plats
+        WHERE utilisateur_id = ?
         ORDER BY CASE statut WHEN 'prevu' THEN 0 ELSE 1 END,
                  date_preparation DESC,
                  id DESC;
-        """
+        """,
+        (utilisateur.id,),
     ).fetchall()
-    plats = [_composer(db, ligne, stock) for ligne in lignes]
+    plats = [_composer(db, utilisateur, ligne, stock) for ligne in lignes]
 
     # Parmi les plats prevus, le plus urgent d'abord ; ceux sans date ferment la
     # marche. Le tri SQL a deja isole les plats prepares en fin de liste.
@@ -227,28 +249,42 @@ def lister_plats(db: sqlite3.Connection = Depends(get_db)) -> list[Plat]:
 
 
 @router.post("", response_model=Plat, status_code=status.HTTP_201_CREATED)
-def creer_plat(corps: PlatACreer, db: sqlite3.Connection = Depends(get_db)) -> Plat:
-    _verifier_disponibilite(db, corps.ingredients)
+def creer_plat(
+    corps: PlatACreer,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> Plat:
+    _verifier_disponibilite(db, utilisateur, corps.ingredients)
 
     curseur = db.execute(
-        "INSERT INTO plats (nom, note, statut, date_creation) VALUES (?, ?, 'prevu', ?);",
-        (corps.nom.strip(), (corps.note or "").strip() or None, _aujourdhui()),
+        """
+        INSERT INTO plats (utilisateur_id, nom, note, statut, date_creation)
+        VALUES (?, ?, ?, 'prevu', ?);
+        """,
+        (utilisateur.id, corps.nom.strip(), (corps.note or "").strip() or None, _aujourdhui()),
     )
     plat_id = curseur.lastrowid
     _ecrire_ingredients(db, plat_id, corps.ingredients)
-    return _charger_plat(db, plat_id)
+    return _charger_plat(db, utilisateur, plat_id)
 
 
 @router.get("/{plat_id}", response_model=Plat)
-def lire_plat(plat_id: int, db: sqlite3.Connection = Depends(get_db)) -> Plat:
-    return _charger_plat(db, plat_id)
+def lire_plat(
+    plat_id: int,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> Plat:
+    return _charger_plat(db, utilisateur, plat_id)
 
 
 @router.patch("/{plat_id}", response_model=Plat)
 def modifier_plat(
-    plat_id: int, corps: PlatPatch, db: sqlite3.Connection = Depends(get_db)
+    plat_id: int,
+    corps: PlatPatch,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
 ) -> Plat:
-    plat = _charger_plat(db, plat_id)
+    plat = _charger_plat(db, utilisateur, plat_id)
     if plat.statut != "prevu":
         raise HTTPException(
             status.HTTP_409_CONFLICT,
@@ -268,16 +304,22 @@ def modifier_plat(
         )
 
     if corps.ingredients is not None:
-        _verifier_disponibilite(db, corps.ingredients, hors_plat=plat_id)
+        _verifier_disponibilite(db, utilisateur, corps.ingredients, hors_plat=plat_id)
         _ecrire_ingredients(db, plat_id, corps.ingredients)
 
-    return _charger_plat(db, plat_id)
+    return _charger_plat(db, utilisateur, plat_id)
 
 
 @router.delete("/{plat_id}", status_code=status.HTTP_204_NO_CONTENT)
-def supprimer_plat(plat_id: int, db: sqlite3.Connection = Depends(get_db)) -> Response:
+def supprimer_plat(
+    plat_id: int,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> Response:
     """Annule un plat. Les ingredients reserves redeviennent disponibles."""
-    curseur = db.execute("DELETE FROM plats WHERE id = ?;", (plat_id,))
+    curseur = db.execute(
+        "DELETE FROM plats WHERE id = ? AND utilisateur_id = ?;", (plat_id, utilisateur.id)
+    )
     if curseur.rowcount == 0:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Plat introuvable.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -285,10 +327,13 @@ def supprimer_plat(plat_id: int, db: sqlite3.Connection = Depends(get_db)) -> Re
 
 @router.post("/{plat_id}/preparer", response_model=Plat)
 def preparer_plat(
-    plat_id: int, corps: PreparationPlat, db: sqlite3.Connection = Depends(get_db)
+    plat_id: int,
+    corps: PreparationPlat,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
 ) -> Plat:
     """Consomme les ingredients reserves et range le plat cuisine dans le frigo."""
-    plat = _charger_plat(db, plat_id)
+    plat = _charger_plat(db, utilisateur, plat_id)
     if plat.statut != "prevu":
         raise HTTPException(status.HTTP_409_CONFLICT, "Ce plat a déjà été préparé.")
     if not plat.ingredients:
@@ -298,7 +343,7 @@ def preparer_plat(
         )
 
     for ingredient in plat.ingredients:
-        _consommer(db, ingredient.lot_id, ingredient.quantite)
+        _consommer(db, utilisateur, ingredient.lot_id, ingredient.quantite)
 
     aujourdhui = _aujourdhui()
     duree = corps.duree_apres_ouverture if corps.duree_apres_ouverture is not None else 3
@@ -308,6 +353,7 @@ def preparer_plat(
 
     lot_resultat = inserer_lot(
         db,
+        utilisateur,
         UniteACreer(
             nom=plat.nom,
             categorie="Plat préparé",
@@ -324,10 +370,12 @@ def preparer_plat(
         "UPDATE plats SET statut = 'prepare', date_preparation = ?, lot_resultat = ? WHERE id = ?;",
         (aujourdhui, lot_resultat, plat_id),
     )
-    return _charger_plat(db, plat_id)
+    return _charger_plat(db, utilisateur, plat_id)
 
 
-def _consommer(db: sqlite3.Connection, lot_id: str, quantite: int) -> None:
+def _consommer(
+    db: sqlite3.Connection, utilisateur: Utilisateur, lot_id: str, quantite: int
+) -> None:
     """Consomme `quantite` unites du lot, de la plus urgente a la moins urgente.
 
     Cuisiner doit d'abord ecouler ce qui allait perimer. Le LIMIT couvre le cas
@@ -337,14 +385,14 @@ def _consommer(db: sqlite3.Connection, lot_id: str, quantite: int) -> None:
     unites = db.execute(
         """
         SELECT id FROM inventaire_frigo
-        WHERE lot_id = ? AND statut_fin IS NULL
+        WHERE lot_id = ? AND utilisateur_id = ? AND statut_fin IS NULL
         ORDER BY
             CASE WHEN date_peremption_effective IS NULL THEN 1 ELSE 0 END,
             date_peremption_effective ASC,
             id ASC
         LIMIT ?;
         """,
-        (lot_id, quantite),
+        (lot_id, utilisateur.id, quantite),
     ).fetchall()
 
     if not unites:

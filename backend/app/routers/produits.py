@@ -5,7 +5,9 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
+from ..auth import utilisateur_courant
 from ..categories import CATEGORIES, normaliser
+from ..comptes import Utilisateur
 from ..db import get_db
 from ..models import (
     LotACreer,
@@ -42,7 +44,10 @@ def _aujourdhui() -> str:
 
 
 @router.get("", response_model=list[Produit])
-def lister_produits(db: sqlite3.Connection = Depends(get_db)) -> list[Produit]:
+def lister_produits(
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> list[Produit]:
     """Inventaire actif, du plus urgent au moins urgent.
 
     Les unites sans DLC sont renvoyees en dernier plutot qu'en tete : en SQLite,
@@ -51,20 +56,24 @@ def lister_produits(db: sqlite3.Connection = Depends(get_db)) -> list[Produit]:
     lignes = db.execute(
         """
         SELECT * FROM inventaire_frigo
-        WHERE statut_fin IS NULL
+        WHERE utilisateur_id = ? AND statut_fin IS NULL
         ORDER BY
             CASE WHEN date_peremption_effective IS NULL THEN 1 ELSE 0 END,
             date_peremption_effective ASC,
             id ASC;
-        """
+        """,
+        (utilisateur.id,),
     ).fetchall()
     return [Produit(**dict(ligne)) for ligne in lignes]
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
-def vider_frigo(db: sqlite3.Connection = Depends(get_db)) -> Response:
+def vider_frigo(
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> Response:
     """Supprime tout l'inventaire, historique compris (bouton "Vider le frigo")."""
-    db.execute("DELETE FROM inventaire_frigo;")
+    db.execute("DELETE FROM inventaire_frigo WHERE utilisateur_id = ?;", (utilisateur.id,))
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -73,7 +82,9 @@ def modifier_produit(
     produit_id: int,
     patch: ProduitPatch,
     db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
 ) -> Produit:
+    _charger(db, utilisateur, produit_id)
     champs = {
         cle: valeur
         for cle, valeur in patch.model_dump(exclude_unset=True).items()
@@ -84,16 +95,20 @@ def modifier_produit(
     if champs:
         assignations = ", ".join(f"{cle} = ?" for cle in champs)
         db.execute(
-            f"UPDATE inventaire_frigo SET {assignations} WHERE id = ?;",
-            [*champs.values(), produit_id],
+            f"UPDATE inventaire_frigo SET {assignations} WHERE id = ? AND utilisateur_id = ?;",
+            [*champs.values(), produit_id, utilisateur.id],
         )
-    return _charger(db, produit_id)
+    return _charger(db, utilisateur, produit_id)
 
 
 @router.post("/{produit_id}/ouvrir", response_model=Produit)
-def ouvrir_produit(produit_id: int, db: sqlite3.Connection = Depends(get_db)) -> Produit:
+def ouvrir_produit(
+    produit_id: int,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> Produit:
     """Marque l'unite ouverte et recalcule sa DLC effective depuis aujourd'hui."""
-    produit = _charger(db, produit_id)
+    produit = _charger(db, utilisateur, produit_id)
     duree = produit.duree_apres_ouverture if produit.duree_apres_ouverture is not None else 3
     nouvelle_dlc = date.fromordinal(date.today().toordinal() + duree).isoformat()
 
@@ -101,7 +116,7 @@ def ouvrir_produit(produit_id: int, db: sqlite3.Connection = Depends(get_db)) ->
         "UPDATE inventaire_frigo SET est_ouvert = 1, date_peremption_effective = ? WHERE id = ?;",
         (nouvelle_dlc, produit_id),
     )
-    return _charger(db, produit_id)
+    return _charger(db, utilisateur, produit_id)
 
 
 @router.post("/{produit_id}/statut", response_model=Produit)
@@ -109,36 +124,50 @@ def cloturer_produit(
     produit_id: int,
     corps: StatutPatch,
     db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
 ) -> Produit:
-    _charger(db, produit_id)
+    _charger(db, utilisateur, produit_id)
     db.execute(
         "UPDATE inventaire_frigo SET statut_fin = ?, date_fin = ? WHERE id = ?;",
         (corps.statut, _aujourdhui(), produit_id),
     )
-    return _charger(db, produit_id)
+    return _charger(db, utilisateur, produit_id)
 
 
 @router.delete("/{produit_id}/statut", response_model=Produit)
-def rouvrir_produit(produit_id: int, db: sqlite3.Connection = Depends(get_db)) -> Produit:
+def rouvrir_produit(
+    produit_id: int,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> Produit:
     """Annulation du "consomme"/"jete" : remet l'unite dans l'inventaire actif."""
-    _charger(db, produit_id)
+    _charger(db, utilisateur, produit_id)
     db.execute(
         "UPDATE inventaire_frigo SET statut_fin = NULL, date_fin = NULL WHERE id = ?;",
         (produit_id,),
     )
-    return _charger(db, produit_id)
+    return _charger(db, utilisateur, produit_id)
 
 
 @router.delete("/{produit_id}", status_code=status.HTTP_204_NO_CONTENT)
-def supprimer_produit(produit_id: int, db: sqlite3.Connection = Depends(get_db)) -> Response:
+def supprimer_produit(
+    produit_id: int,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> Response:
     """Effacement definitif : reserve aux erreurs de saisie, pas au gaspillage."""
-    curseur = db.execute("DELETE FROM inventaire_frigo WHERE id = ?;", (produit_id,))
+    curseur = db.execute(
+        "DELETE FROM inventaire_frigo WHERE id = ? AND utilisateur_id = ?;",
+        (produit_id, utilisateur.id),
+    )
     if curseur.rowcount == 0:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Produit introuvable.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def inserer_lot(db: sqlite3.Connection, unite: UniteACreer, count: int) -> str:
+def inserer_lot(
+    db: sqlite3.Connection, utilisateur: Utilisateur, unite: UniteACreer, count: int
+) -> str:
     """Insere `count` unites physiques individuelles partageant un meme lot_id.
 
     Expose au niveau du module car la preparation d'un plat range elle aussi le
@@ -149,12 +178,13 @@ def inserer_lot(db: sqlite3.Connection, unite: UniteACreer, count: int) -> str:
     db.executemany(
         """
         INSERT INTO inventaire_frigo
-            (nom, categorie, date_achat, est_ouvert, duree_apres_ouverture,
+            (utilisateur_id, nom, categorie, date_achat, est_ouvert, duree_apres_ouverture,
              date_peremption_effective, est_un_reste, lot_id, statut_fin)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL);
         """,
         [
             (
+                utilisateur.id,
                 unite.nom,
                 normaliser(unite.categorie),
                 unite.date_achat,
@@ -171,15 +201,23 @@ def inserer_lot(db: sqlite3.Connection, unite: UniteACreer, count: int) -> str:
 
 
 @router_lots.post("", response_model=LotCree, status_code=status.HTTP_201_CREATED)
-def creer_lot(corps: LotACreer, db: sqlite3.Connection = Depends(get_db)) -> LotCree:
+def creer_lot(
+    corps: LotACreer,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> LotCree:
     """Cree `count` unites physiques individuelles partageant un meme lot_id."""
-    lot_id = inserer_lot(db, corps.unite, corps.count)
-    return LotCree(lot_id=lot_id, unites=_charger_lot(db, lot_id))
+    lot_id = inserer_lot(db, utilisateur, corps.unite, corps.count)
+    return LotCree(lot_id=lot_id, unites=_charger_lot(db, utilisateur, lot_id))
 
 
 @router_lots.get("/{lot_id}", response_model=list[Produit])
-def lire_lot(lot_id: str, db: sqlite3.Connection = Depends(get_db)) -> list[Produit]:
-    return _charger_lot(db, lot_id)
+def lire_lot(
+    lot_id: str,
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> list[Produit]:
+    return _charger_lot(db, utilisateur, lot_id)
 
 
 @router_lots.patch("/{lot_id}", response_model=list[Produit])
@@ -187,18 +225,20 @@ def modifier_lot(
     lot_id: str,
     patch: LotPatch,
     db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
 ) -> list[Produit]:
     """Renomme / recategorise toutes les unites du lot d'un coup."""
+    _charger_lot(db, utilisateur, lot_id)
     champs = patch.model_dump(exclude_unset=True)
     if "categorie" in champs:
         champs["categorie"] = normaliser(champs["categorie"])
     if champs:
         assignations = ", ".join(f"{cle} = ?" for cle in champs)
         db.execute(
-            f"UPDATE inventaire_frigo SET {assignations} WHERE lot_id = ?;",
-            [*champs.values(), lot_id],
+            f"UPDATE inventaire_frigo SET {assignations} WHERE lot_id = ? AND utilisateur_id = ?;",
+            [*champs.values(), lot_id, utilisateur.id],
         )
-    return _charger_lot(db, lot_id)
+    return _charger_lot(db, utilisateur, lot_id)
 
 
 reference_router = APIRouter(tags=["reference"])
@@ -225,30 +265,36 @@ stats_router = APIRouter(tags=["stats"])
 
 
 @stats_router.get("/stats", response_model=Stats)
-def lire_stats(db: sqlite3.Connection = Depends(get_db)) -> Stats:
+def lire_stats(
+    db: sqlite3.Connection = Depends(get_db),
+    utilisateur: Utilisateur = Depends(utilisateur_courant),
+) -> Stats:
     compteurs = dict(
         db.execute(
             """
             SELECT statut_fin, COUNT(*) FROM inventaire_frigo
-            WHERE statut_fin IS NOT NULL GROUP BY statut_fin;
-            """
+            WHERE utilisateur_id = ? AND statut_fin IS NOT NULL GROUP BY statut_fin;
+            """,
+            (utilisateur.id,),
         ).fetchall()
     )
 
     top = db.execute(
         """
         SELECT nom, COUNT(*) AS count FROM inventaire_frigo
-        WHERE statut_fin = 'jete'
+        WHERE utilisateur_id = ? AND statut_fin = 'jete'
         GROUP BY nom ORDER BY count DESC, nom ASC LIMIT 5;
-        """
+        """,
+        (utilisateur.id,),
     ).fetchall()
 
     recents = db.execute(
         """
         SELECT id, nom, statut_fin, date_fin FROM inventaire_frigo
-        WHERE statut_fin IS NOT NULL
+        WHERE utilisateur_id = ? AND statut_fin IS NOT NULL
         ORDER BY date_fin DESC, id DESC LIMIT 10;
-        """
+        """,
+        (utilisateur.id,),
     ).fetchall()
 
     return Stats(
@@ -259,16 +305,25 @@ def lire_stats(db: sqlite3.Connection = Depends(get_db)) -> Stats:
     )
 
 
-def _charger(db: sqlite3.Connection, produit_id: int) -> Produit:
-    ligne = db.execute("SELECT * FROM inventaire_frigo WHERE id = ?;", (produit_id,)).fetchone()
+def _charger(db: sqlite3.Connection, utilisateur: Utilisateur, produit_id: int) -> Produit:
+    """Charge une unite du frigo de ce compte.
+
+    Le filtre sur utilisateur_id n'est pas une precaution : sans lui, un
+    identifiant devine donnerait acces au frigo du voisin.
+    """
+    ligne = db.execute(
+        "SELECT * FROM inventaire_frigo WHERE id = ? AND utilisateur_id = ?;",
+        (produit_id, utilisateur.id),
+    ).fetchone()
     if ligne is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Produit introuvable.")
     return Produit(**dict(ligne))
 
 
-def _charger_lot(db: sqlite3.Connection, lot_id: str) -> list[Produit]:
+def _charger_lot(db: sqlite3.Connection, utilisateur: Utilisateur, lot_id: str) -> list[Produit]:
     lignes = db.execute(
-        "SELECT * FROM inventaire_frigo WHERE lot_id = ? ORDER BY id ASC;", (lot_id,)
+        "SELECT * FROM inventaire_frigo WHERE lot_id = ? AND utilisateur_id = ? ORDER BY id ASC;",
+        (lot_id, utilisateur.id),
     ).fetchall()
     if not lignes:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Lot introuvable.")

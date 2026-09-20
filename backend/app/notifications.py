@@ -20,29 +20,30 @@ from .push import configure, envoyer_a_tous
 
 logger = logging.getLogger(__name__)
 
-#: Marqueur du dernier envoi, dans la table settings. Le minuteur systemd est
+#: Marqueur du dernier envoi, par compte. Le minuteur systemd est
 #: `Persistent=true` : apres une Raspberry restee eteinte, il rattrape l'horaire
 #: manque des l'allumage. Sans ce garde-fou, un redemarrage le meme jour
 #: renotifierait.
 CLE_DERNIER_ENVOI = "derniere_notification_peremption"
 
 
-def _lire_marqueur(db: sqlite3.Connection) -> str | None:
+def _lire_marqueur(db: sqlite3.Connection, utilisateur_id: int) -> str | None:
     """Lecture directe plutot que via le router des reglages : ce module doit
     rester utilisable en ligne de commande, sans dependre d'une couche HTTP."""
     ligne = db.execute(
-        "SELECT value FROM settings WHERE key = ?;", (CLE_DERNIER_ENVOI,)
+        "SELECT valeur FROM reglages WHERE utilisateur_id = ? AND cle = ?;",
+        (utilisateur_id, CLE_DERNIER_ENVOI),
     ).fetchone()
-    return ligne["value"] if ligne else None
+    return ligne["valeur"] if ligne else None
 
 
-def _poser_marqueur(db: sqlite3.Connection, jour: date) -> None:
+def _poser_marqueur(db: sqlite3.Connection, utilisateur_id: int, jour: date) -> None:
     db.execute(
         """
-        INSERT INTO settings (key, value) VALUES (?, ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+        INSERT INTO reglages (utilisateur_id, cle, valeur) VALUES (?, ?, ?)
+        ON CONFLICT(utilisateur_id, cle) DO UPDATE SET valeur = excluded.valeur;
         """,
-        (CLE_DERNIER_ENVOI, jour.isoformat()),
+        (utilisateur_id, CLE_DERNIER_ENVOI, jour.isoformat()),
     )
 
 
@@ -51,7 +52,9 @@ def _jours(dlc: str, aujourdhui: date) -> int:
     return (date(annee, mois, jour) - aujourdhui).days
 
 
-def produits_urgents(db: sqlite3.Connection, seuil: int, aujourdhui: date) -> list[dict]:
+def produits_urgents(
+    db: sqlite3.Connection, utilisateur_id: int, seuil: int, aujourdhui: date
+) -> list[dict]:
     """Lots actifs dont la DLC tombe dans les `seuil` prochains jours, ou est passee.
 
     Regroupe par nom plutot que par lot : deux barquettes de saumon achetees
@@ -65,13 +68,14 @@ def produits_urgents(db: sqlite3.Connection, seuil: int, aujourdhui: date) -> li
                COUNT(*) AS unites,
                MIN(date_peremption_effective) AS dlc
         FROM inventaire_frigo
-        WHERE statut_fin IS NULL
+        WHERE utilisateur_id = ?
+          AND statut_fin IS NULL
           AND date_peremption_effective IS NOT NULL
           AND date_peremption_effective <= ?
         GROUP BY nom
         ORDER BY dlc ASC, nom ASC;
         """,
-        (limite,),
+        (utilisateur_id, limite),
     ).fetchall()
 
     return [
@@ -120,37 +124,60 @@ def composer(urgents: list[dict]) -> tuple[str, str]:
     return titre, " · ".join(groupes)
 
 
-def executer(force: bool = False, simuler: bool = False) -> dict:
-    """Calcule l'alerte du jour et la diffuse. Renvoie ce qui s'est passe."""
+def executer_pour(
+    db: sqlite3.Connection, utilisateur_id: int, force: bool, simuler: bool, aujourdhui: date
+) -> dict:
+    """Calcule l'alerte du jour pour un compte et la diffuse a ses appareils."""
     settings = get_settings()
+
+    deja = _lire_marqueur(db, utilisateur_id)
+    if deja == aujourdhui.isoformat() and not force:
+        return {"statut": "deja_envoye", "date": deja}
+
+    urgents = produits_urgents(db, utilisateur_id, settings.notification_seuil_jours, aujourdhui)
+    if not urgents:
+        return {"statut": "rien_a_signaler"}
+
+    titre, corps = composer(urgents)
+
+    if simuler:
+        return {"statut": "simulation", "titre": titre, "corps": corps}
+
+    if not configure():
+        return {"statut": "vapid_absent", "titre": titre, "corps": corps}
+
+    resultat = envoyer_a_tous(db, utilisateur_id, titre, corps)
+
+    # Le marqueur n'est pose que si un appareil a bien recu l'alerte : sans
+    # abonne joignable, il faut pouvoir retenter (au prochain allumage, par
+    # exemple) plutot que de considerer la journee comme traitee.
+    if resultat["envoyes"] > 0:
+        _poser_marqueur(db, utilisateur_id, aujourdhui)
+
+    return {"statut": "envoye", "titre": titre, "corps": corps, **resultat}
+
+
+def executer(force: bool = False, simuler: bool = False) -> dict:
+    """Passe en revue tous les comptes du serveur, un frigo a la fois.
+
+    Chaque compte a ses propres produits, ses propres appareils et son propre
+    marqueur du jour : une Raspberry rallumee tard rattrape l'alerte de tout le
+    monde, et un compte sans rien d'urgent ne derange personne.
+    """
     aujourdhui = date.today()
 
     with connexion() as db:
-        deja = _lire_marqueur(db)
-        if deja == aujourdhui.isoformat() and not force:
-            return {"statut": "deja_envoye", "date": deja}
+        comptes = db.execute("SELECT id, identifiant FROM utilisateurs ORDER BY id;").fetchall()
+        par_compte = {
+            ligne["identifiant"]: executer_pour(
+                db, ligne["id"], force=force, simuler=simuler, aujourdhui=aujourdhui
+            )
+            for ligne in comptes
+        }
 
-        urgents = produits_urgents(db, settings.notification_seuil_jours, aujourdhui)
-        if not urgents:
-            return {"statut": "rien_a_signaler"}
-
-        titre, corps = composer(urgents)
-
-        if simuler:
-            return {"statut": "simulation", "titre": titre, "corps": corps}
-
-        if not configure():
-            return {"statut": "vapid_absent", "titre": titre, "corps": corps}
-
-        resultat = envoyer_a_tous(db, titre, corps)
-
-        # Le marqueur n'est pose que si un appareil a bien recu l'alerte : sans
-        # abonne joignable, il faut pouvoir retenter (au prochain allumage, par
-        # exemple) plutot que de considerer la journee comme traitee.
-        if resultat["envoyes"] > 0:
-            _poser_marqueur(db, aujourdhui)
-
-        return {"statut": "envoye", "titre": titre, "corps": corps, **resultat}
+    if not par_compte:
+        return {"statut": "aucun_compte"}
+    return {"statut": "termine", "comptes": par_compte}
 
 
 def main() -> None:

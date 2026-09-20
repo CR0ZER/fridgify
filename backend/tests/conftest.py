@@ -31,16 +31,70 @@ from app.db import connexion  # noqa: E402
 from app.main import app  # noqa: E402
 
 
+#: Compte ouvert par la fixture `client`. Les tests parlent toujours au nom
+#: d'un compte : sans session, l'API ne sait pas de quel frigo il s'agit.
+COMPTE, MOT_DE_PASSE = "testeur", "motdepasse"
+
+
+def _vider_la_base():
+    with connexion() as conn:
+        for table in (
+            "courses",
+            "plat_ingredients",
+            "plats",
+            "inventaire_frigo",
+            "abonnements_push",
+            "reglages",
+            "scans_journaliers",
+            "jetons_service",
+            "sessions",
+            "utilisateurs",
+        ):
+            conn.execute(f"DELETE FROM {table};")
+
+
+def _connecter(identifiant: str = COMPTE) -> TestClient:
+    """Client porteur de la cle API et d'une session fraiche."""
+    c = TestClient(app)
+    c.headers["X-API-Key"] = CLE_TEST
+    reponse = c.post(
+        "/api/auth/inscription",
+        json={"identifiant": identifiant, "mot_de_passe": MOT_DE_PASSE},
+    )
+    assert reponse.status_code == 201, reponse.text
+    return c
+
+
 @pytest.fixture()
 def client():
-    """Client authentifie sur une base videe apres chaque test."""
-    with TestClient(app) as c:
-        c.headers["X-API-Key"] = CLE_TEST
-        yield c
+    """Client connecte sur une base videe apres chaque test."""
+    with TestClient(app):
+        # Le premier TestClient declenche le demarrage de l'application (donc
+        # la creation du schema) ; les clients suivants s'y branchent.
+        c = _connecter()
+        with c:
+            yield c
+    _vider_la_base()
+    from app import auth
 
-    with connexion() as conn:
-        for table in ("courses", "plat_ingredients", "plats", "inventaire_frigo", "settings", "abonnements_push"):
-            conn.execute(f"DELETE FROM {table};")
+    auth._echecs.clear()
+
+
+@pytest.fixture()
+def compte_id(client):
+    """Identifiant interne du compte connecte, pour les appels hors HTTP."""
+    with connexion() as db:
+        return db.execute(
+            "SELECT id FROM utilisateurs WHERE identifiant = ?;", (COMPTE,)
+        ).fetchone()["id"]
+
+
+@pytest.fixture()
+def voisin(client):
+    """Second compte, pour verifier qu'un frigo n'en voit jamais un autre."""
+    c = _connecter("voisine")
+    with c:
+        yield c
 
 
 @pytest.fixture()
