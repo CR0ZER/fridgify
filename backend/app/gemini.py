@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import re
 
 import httpx
@@ -9,6 +10,8 @@ from .config import get_settings
 
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 TIMEOUT = httpx.Timeout(120.0, connect=10.0)
+
+logger = logging.getLogger(__name__)
 
 _BLOC_MARKDOWN = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
 
@@ -33,10 +36,31 @@ def _extraire_json(texte: str) -> list:
         except json.JSONDecodeError:
             pass
 
+    logger.warning("Gemini : reponse non exploitable en JSON : %s", nettoye[:500])
     raise HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail=f"Reponse Gemini illisible : {nettoye[:400]}",
     )
+
+
+def _extraire_texte(data: dict) -> str:
+    try:
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError, TypeError) as exc:
+        # Un modele qui "reflechit" peut epuiser son budget de sortie avant
+        # d'ecrire quoi que ce soit : la reponse est alors valide, mais sans
+        # aucune part de texte. Le finishReason est ce qui le dit.
+        candidat = (data.get("candidates") or [{}])[0]
+        raison = candidat.get("finishReason", "inconnu")
+        logger.warning(
+            "Gemini n'a renvoye aucun texte (finishReason=%s, usage=%s)",
+            raison,
+            data.get("usageMetadata"),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Gemini n'a renvoye aucun texte (raison : {raison}).",
+        ) from exc
 
 
 async def _appeler(parts: list[dict]) -> list:
@@ -67,20 +91,13 @@ async def _appeler(parts: list[dict]) -> list:
             ) from exc
 
     if reponse.status_code != 200:
+        logger.warning("Gemini a repondu %s : %s", reponse.status_code, reponse.text[:500])
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Erreur API Gemini ({reponse.status_code}) : {reponse.text[:400]}",
         )
 
-    data = reponse.json()
-    try:
-        texte = data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Reponse Gemini vide ou mal formee.",
-        ) from exc
-
+    texte = _extraire_texte(reponse.json())
     return _extraire_json(texte)
 
 

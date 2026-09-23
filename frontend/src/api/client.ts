@@ -50,10 +50,13 @@ async function requete<T>(chemin: string, options: RequestInit = {}): Promise<T>
     throw new ApiError(INJOIGNABLE, 0)
   }
 
-  // nginx répond lui-même 502 quand l'API est arrêtée : pour l'utilisateur,
-  // c'est la même panne qu'une Raspberry éteinte.
+  // nginx répond lui-même 502 quand l'API est arrêtée, sans corps JSON : c'est
+  // alors la même panne qu'une Raspberry éteinte. FastAPI se sert des mêmes
+  // codes quand Gemini répond mal : son message est la seule piste utile.
   if ([502, 503, 504].includes(reponse.status)) {
-    throw new ApiError(INJOIGNABLE, reponse.status)
+    const message = await messageErreur(reponse)
+    const sansDetail = message === `Erreur serveur (${reponse.status}).`
+    throw new ApiError(sansDetail ? INJOIGNABLE : message, reponse.status)
   }
   if (!reponse.ok) {
     const message = await messageErreur(reponse)
