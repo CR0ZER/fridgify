@@ -187,6 +187,19 @@
   font: 600 15px var(--font-mono);
 }
 
+/* Safari iOS donne au champ date une largeur propre qui ignore width: 100 %,
+   et centre sa valeur : sans ces règles, il déborde du cadre. */
+input[type='date'].champ {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+}
+
+.champ::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 textarea.champ {
   padding: 12px;
   font: 400 12px/1.6 var(--font-mono);

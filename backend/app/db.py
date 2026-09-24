@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     appareil TEXT
 );
 
--- Jetons de machine a machine : l'ecran du salon agit sur le frigo de son
+-- Jetons de machine a machine : un ecran d'affichage agit sur le frigo de son
 -- proprietaire sans ouvrir de session ni connaitre son mot de passe.
 CREATE TABLE IF NOT EXISTS jetons_service (
     jeton TEXT PRIMARY KEY,

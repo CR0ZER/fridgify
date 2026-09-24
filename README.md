@@ -221,7 +221,7 @@ comme secours, sans notifications.
 | Prochaine alerte programmée            | `systemctl list-timers fridgify-notifications.timer`       |
 | Prévisualiser l'alerte sans l'envoyer  | `cd backend && .venv/bin/python -m app.notifications --simuler` |
 | Forcer l'envoi de l'alerte du jour     | `cd backend && .venv/bin/python -m app.notifications --force` |
-| Lister les comptes                     | `cd backend && .venv/bin/python -m app.comptes lister`     |
+| Lister les comptes et leurs jetons     | `cd backend && .venv/bin/python -m app.comptes lister`     |
 | Réinitialiser un mot de passe          | `cd backend && .venv/bin/python -m app.comptes mot-de-passe <identifiant>` |
 
 Sauvegarder la base (la Raspberry n'a pas besoin de l'outil `sqlite3`) :
@@ -282,12 +282,20 @@ requête vient d'un appareil autorisé ; il protège le port 8000, joignable dep
 tout le réseau local. La **session** dit ensuite de quel compte il s'agit, et
 donc quel frigo répond. Seul `/api/health` se passe des deux.
 
-Une machine — l'écran d'affichage du salon, un script — présente à la place un
+Une machine — un écran d'affichage, un script — présente à la place un
 **jeton de service**, créé sur le serveur et rattaché à un compte :
 
 ```bash
-cd backend && .venv/bin/python -m app.comptes jeton florian "Écran du salon"
+cd backend && .venv/bin/python -m app.comptes jeton <identifiant> "Tableau de bord"
 curl -H "X-API-Key: $CLE" -H "X-Service-Token: $JETON" http://<ip>:8000/api/produits
+```
+
+Le jeton ne s'affiche qu'à sa création et n'expire pas ; un changement de mot
+de passe ne le touche pas. Pour couper l'accès d'une machine, on le révoque par
+son libellé (`lister` affiche les jetons de chaque compte) :
+
+```bash
+cd backend && .venv/bin/python -m app.comptes revoquer <identifiant> "Tableau de bord"
 ```
 
 <details>

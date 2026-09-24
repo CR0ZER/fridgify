@@ -182,22 +182,34 @@ def test_supprimer_un_compte_emporte_son_frigo(client, voisin, creer_lot):
     assert [ligne["nom"] for ligne in restants] == ["Tofu"]
 
 
-# ---- Jeton de service (ecran du salon) -----------------------------------
+# ---- Jeton de service (machine) -----------------------------------
 
 
 def test_jeton_de_service_agit_sur_le_frigo_de_son_compte(client, anonyme, creer_lot, compte_id):
     creer_lot("Saumon")
     with connexion() as db:
-        jeton = comptes.creer_jeton_service(db, compte_id, "Ecran du salon")
+        jeton = comptes.creer_jeton_service(db, compte_id, "Tableau de bord")
 
     anonyme.headers["X-Service-Token"] = jeton
 
     assert [p["nom"] for p in anonyme.get("/api/produits").json()] == ["Saumon"]
 
-    # Lecture *et* ecriture : l'ecran du salon marque aussi les produits sortis.
+    # Lecture *et* ecriture : un ecran d'affichage marque aussi les produits sortis.
     unite = anonyme.get("/api/produits").json()[0]["id"]
     assert anonyme.post(f"/api/produits/{unite}/statut", json={"statut": "consomme"}).status_code == 200
     assert client.get("/api/produits").json() == []
+
+
+def test_jeton_revoque_refuse(anonyme, compte_id):
+    with connexion() as db:
+        jeton = comptes.creer_jeton_service(db, compte_id, "Écran cuisine")
+        garde = comptes.creer_jeton_service(db, compte_id, "Script")
+        assert comptes.revoquer_jetons(db, compte_id, "écran CUISINE") == 1
+
+    anonyme.headers["X-Service-Token"] = jeton
+    assert anonyme.get("/api/produits").status_code == 401
+    anonyme.headers["X-Service-Token"] = garde
+    assert anonyme.get("/api/produits").status_code == 200
 
 
 def test_jeton_de_service_invalide_refuse(anonyme):

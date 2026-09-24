@@ -13,7 +13,8 @@ En ligne de commande, sur le serveur :
     .venv/bin/python -m app.comptes creer <identifiant>
     .venv/bin/python -m app.comptes mot-de-passe <identifiant>
     .venv/bin/python -m app.comptes supprimer <identifiant>
-    .venv/bin/python -m app.comptes jeton <identifiant> "Ecran du salon"
+    .venv/bin/python -m app.comptes jeton <identifiant> "Tableau de bord"
+    .venv/bin/python -m app.comptes revoquer <identifiant> "Tableau de bord"
 """
 
 import argparse
@@ -247,7 +248,7 @@ def purger_sessions(db: sqlite3.Connection) -> int:
 
 
 def creer_jeton_service(db: sqlite3.Connection, utilisateur_id: int, libelle: str) -> str:
-    """Jeton pour une machine (l'ecran du salon). Affiche une seule fois."""
+    """Jeton pour une machine (ecran d'affichage, script). Affiche une seule fois."""
     jeton = secrets.token_urlsafe(32)
     db.execute(
         """
@@ -276,6 +277,35 @@ def utilisateur_de_jeton(db: sqlite3.Connection, jeton: str) -> Utilisateur | No
         (date.today().isoformat(), empreinte),
     )
     return Utilisateur(ligne["id"], ligne["identifiant"], ligne["date_creation"])
+
+
+def revoquer_jetons(db: sqlite3.Connection, utilisateur_id: int, libelle: str) -> int:
+    """Supprime les jetons du compte portant ce libelle, et renvoie leur nombre.
+
+    Le jeton en clair n'est pas conserve : c'est le libelle donne a la creation
+    qui le designe. Deux jetons au meme libelle tombent ensemble. La casse est
+    ignoree en Python : COLLATE NOCASE ne replie que l'ASCII (« É » != « é »).
+    """
+    cible = libelle.strip().casefold()
+    empreintes = [
+        (ligne["jeton"],)
+        for ligne in db.execute(
+            "SELECT jeton, libelle FROM jetons_service WHERE utilisateur_id = ?;", (utilisateur_id,)
+        )
+        if ligne["libelle"].strip().casefold() == cible
+    ]
+    db.executemany("DELETE FROM jetons_service WHERE jeton = ?;", empreintes)
+    return len(empreintes)
+
+
+def lister_jetons(db: sqlite3.Connection, utilisateur_id: int) -> list[sqlite3.Row]:
+    return db.execute(
+        """
+        SELECT libelle, date_creation, dernier_acces FROM jetons_service
+        WHERE utilisateur_id = ? ORDER BY date_creation, libelle;
+        """,
+        (utilisateur_id,),
+    ).fetchall()
 
 
 # ---- Quota de scan -------------------------------------------------------
@@ -330,6 +360,9 @@ def main() -> None:
     p = sous.add_parser("jeton", help="jeton de service pour une machine")
     p.add_argument("identifiant")
     p.add_argument("libelle", nargs="?", default="Machine")
+    p = sous.add_parser("revoquer", help="revoque le jeton de service d'une machine")
+    p.add_argument("identifiant")
+    p.add_argument("libelle")
 
     arguments = analyseur.parse_args()
     init_db()
@@ -338,7 +371,7 @@ def main() -> None:
         if arguments.commande == "lister":
             lignes = db.execute(
                 """
-                SELECT u.identifiant, u.date_creation, u.derniere_connexion,
+                SELECT u.id, u.identifiant, u.date_creation, u.derniere_connexion,
                        (SELECT COUNT(*) FROM inventaire_frigo i
                         WHERE i.utilisateur_id = u.id AND i.statut_fin IS NULL) AS unites
                 FROM utilisateurs u ORDER BY u.id;
@@ -352,6 +385,11 @@ def main() -> None:
                     f" · {ligne['unites']} unités"
                     f" · dernière connexion {ligne['derniere_connexion'] or 'jamais'}"
                 )
+                for jeton in lister_jetons(db, ligne["id"]):
+                    print(
+                        f"    jeton « {jeton['libelle']} » créé le {jeton['date_creation']}"
+                        f" · dernier accès {jeton['dernier_acces'] or 'jamais'}"
+                    )
             return
 
         try:
@@ -381,6 +419,17 @@ def main() -> None:
                 print(f"    {jeton}\n")
                 print("Notez-le maintenant : il n'est pas récupérable ensuite.")
                 print("À envoyer dans l'en-tête X-Service-Token de chaque requête.")
+            elif arguments.commande == "revoquer":
+                ligne = lire_utilisateur(db, arguments.identifiant)
+                if ligne is None:
+                    raise ValueError("Compte introuvable.")
+                if not revoquer_jetons(db, ligne["id"], arguments.libelle):
+                    libelles = [j["libelle"] for j in lister_jetons(db, ligne["id"])]
+                    raise ValueError(
+                        f"Aucun jeton « {arguments.libelle} » pour ce compte."
+                        + (f" Jetons existants : {', '.join(libelles)}." if libelles else "")
+                    )
+                print(f"Jeton « {arguments.libelle} » révoqué : la machine n'a plus accès au frigo.")
         except ValueError as erreur:
             print(erreur, file=sys.stderr)
             raise SystemExit(1) from erreur

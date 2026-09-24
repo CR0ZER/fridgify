@@ -4,8 +4,8 @@
    appareil autorise. Elle protege le port 8000, joignable depuis tout le
    reseau local et le tailnet.
 2. La session, elle, dit *qui* parle : c'est elle qui choisit le frigo. Elle
-   voyage dans un cookie inaccessible au JavaScript. Une machine (l'ecran du
-   salon) presente a la place un jeton de service.
+   voyage dans un cookie inaccessible au JavaScript. Une machine (un ecran
+   d'affichage, un script) presente a la place un jeton de service.
 """
 
 import secrets
