@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -13,6 +14,7 @@ from ..prompts import CLE_PROMPT_SCAN
 from .reglages import lire_reglage
 
 router = APIRouter(prefix="/llm", tags=["llm"])
+logger = logging.getLogger(__name__)
 
 TAILLE_MAX = 12 * 1024 * 1024
 MIMES_ACCEPTES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
@@ -51,10 +53,15 @@ async def scanner_ticket(
         )
 
     prompt = lire_reglage(db, utilisateur.id, CLE_PROMPT_SCAN) or ""
-    # Compte avant l'appel : un scan qui echoue cote Gemini a quand meme
-    # consomme du quota chez le fournisseur.
+    # Compte avant l'appel, pour que deux scans lances en meme temps ne passent
+    # pas tous deux sous la limite. Rendu si Gemini n'a rien analyse (panne,
+    # surcharge) ; une photo illisible, elle, a bien ete analysee et reste due.
     comptes.compter_scan(db, utilisateur.id)
-    brut = await gemini.analyser_ticket(contenu, mime, prompt)
+    try:
+        brut = await gemini.analyser_ticket(contenu, mime, prompt)
+    except gemini.GeminiEnPanne:
+        comptes.rendre_scan(db, utilisateur.id)
+        raise
     detectes = _valider(brut, ProduitDetecte, "produits detectes")
 
     # Malgre la consigne du prompt, le modele s'ecarte parfois de la liste : on
@@ -66,15 +73,15 @@ async def scanner_ticket(
 
 def _valider(brut: object, modele: type, quoi: str) -> list:
     """Le JSON vient d'un LLM : on le valide avant de le laisser entrer."""
+    illisible = HTTPException(
+        status.HTTP_502_BAD_GATEWAY,
+        "Gemini n'a pas su lire ce ticket. Reprenez la photo, à plat et bien nette.",
+    )
     if not isinstance(brut, list):
-        raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY,
-            f"Gemini n'a pas renvoye une liste de {quoi}.",
-        )
+        logger.warning("Gemini : %s attendus en liste, recu %r", quoi, brut)
+        raise illisible
     try:
         return [modele(**element) for element in brut]
     except (ValidationError, TypeError) as exc:
-        raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY,
-            f"Format inattendu pour les {quoi} : {exc}",
-        ) from exc
+        logger.warning("Gemini : format inattendu pour les %s : %s", quoi, exc)
+        raise illisible from exc

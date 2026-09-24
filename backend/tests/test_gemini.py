@@ -7,7 +7,7 @@ rempart avant que les donnees n'entrent dans l'application.
 import pytest
 from fastapi import HTTPException
 
-from app.gemini import _extraire_json, _extraire_texte
+from app.gemini import _extraire_json, _extraire_texte, message_http
 
 
 def test_json_nu():
@@ -39,3 +39,10 @@ def test_reponse_sans_texte_nomme_la_raison():
         _extraire_texte(data)
     assert erreur.value.status_code == 502
     assert "MAX_TOKENS" in erreur.value.detail
+
+
+@pytest.mark.parametrize("code, attendu", [(503, "surchargé"), (429, "trop de demandes"), (403, "clé API"), (418, "code 418")])
+def test_erreur_http_traduite_sans_json_brut(code, attendu):
+    message = message_http(code)
+    assert attendu in message
+    assert "{" not in message

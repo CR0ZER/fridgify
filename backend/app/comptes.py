@@ -327,6 +327,17 @@ def compter_scan(db: sqlite3.Connection, utilisateur_id: int) -> int:
     ).fetchone()[0]
 
 
+def rendre_scan(db: sqlite3.Connection, utilisateur_id: int) -> None:
+    """Annule un scan compte a tort : Gemini n'a rien analyse."""
+    db.execute(
+        """
+        UPDATE scans_journaliers SET nombre = MAX(nombre - 1, 0)
+        WHERE utilisateur_id = ? AND jour = ?;
+        """,
+        (utilisateur_id, date.today().isoformat()),
+    )
+
+
 def scans_restants(db: sqlite3.Connection, utilisateur_id: int) -> int:
     ligne = db.execute(
         "SELECT nombre FROM scans_journaliers WHERE utilisateur_id = ? AND jour = ?;",

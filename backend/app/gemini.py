@@ -13,6 +13,18 @@ TIMEOUT = httpx.Timeout(120.0, connect=10.0)
 
 logger = logging.getLogger(__name__)
 
+#: Les messages s'adressent a quelqu'un qui n'a acces ni au code ni au serveur :
+#: ils nomment Gemini, mais le detail technique part au journal.
+NON_DECOMPTE = " Ce scan n'a pas été décompté."
+
+
+class GeminiEnPanne(HTTPException):
+    """Gemini n'a rien analyse : le scan est rendu au quota du compte."""
+
+    def __init__(self, status_code: int, detail: str) -> None:
+        super().__init__(status_code=status_code, detail=detail + NON_DECOMPTE)
+
+
 _BLOC_MARKDOWN = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
 
 
@@ -39,7 +51,7 @@ def _extraire_json(texte: str) -> list:
     logger.warning("Gemini : reponse non exploitable en JSON : %s", nettoye[:500])
     raise HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
-        detail=f"Reponse Gemini illisible : {nettoye[:400]}",
+        detail="Gemini n'a pas su lire ce ticket. Reprenez la photo, à plat et bien nette.",
     )
 
 
@@ -59,17 +71,36 @@ def _extraire_texte(data: dict) -> str:
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Gemini n'a renvoye aucun texte (raison : {raison}).",
+            detail=f"Gemini n'a rien renvoyé (raison : {raison}). Réessayez.",
         ) from exc
+
+
+def message_http(code: int) -> str:
+    """Ce que l'utilisateur lit quand Gemini repond par une erreur HTTP.
+
+    Le corps de la reponse, un JSON en anglais, part au journal. Seuls 429 et
+    5xx passent avec le temps ; le reste (cle refusee, modele inconnu) demande
+    l'intervention de l'administrateur, a qui le code servira.
+    """
+    if code == 429:
+        return "Gemini reçoit trop de demandes, ou le quota du serveur est épuisé. Réessayez plus tard."
+    if code >= 500:
+        return "Gemini est surchargé en ce moment. Réessayez dans quelques minutes."
+    if code in (401, 403):
+        return "Gemini refuse la clé API du serveur. Prévenez l'administrateur."
+    if code == 404:
+        return "Modèle Gemini introuvable. Prévenez l'administrateur."
+    return f"Gemini a refusé la demande (code {code})."
 
 
 async def _appeler(parts: list[dict]) -> list:
     settings = get_settings()
 
     if not settings.gemini_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="GEMINI_API_KEY absente du .env du serveur.",
+        logger.warning("GEMINI_API_KEY absente du .env du serveur.")
+        raise GeminiEnPanne(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Aucune clé API Gemini sur le serveur. Prévenez l'administrateur.",
         )
 
     url = f"{BASE_URL}/{settings.gemini_model}:generateContent"
@@ -85,17 +116,15 @@ async def _appeler(parts: list[dict]) -> list:
                 json={"contents": [{"parts": parts}]},
             )
         except httpx.RequestError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-                detail=f"Gemini injoignable : {exc}",
+            logger.warning("Gemini injoignable : %r", exc)
+            raise GeminiEnPanne(
+                status.HTTP_504_GATEWAY_TIMEOUT,
+                "Gemini injoignable depuis le serveur. Réessayez dans un moment.",
             ) from exc
 
     if reponse.status_code != 200:
         logger.warning("Gemini a repondu %s : %s", reponse.status_code, reponse.text[:500])
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Erreur API Gemini ({reponse.status_code}) : {reponse.text[:400]}",
-        )
+        raise GeminiEnPanne(status.HTTP_502_BAD_GATEWAY, message_http(reponse.status_code))
 
     texte = _extraire_texte(reponse.json())
     return _extraire_json(texte)

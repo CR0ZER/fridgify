@@ -240,6 +240,15 @@ def test_quota_de_scan_par_compte(client, voisin, compte_id):
     ).status_code != 429
 
 
+def test_scan_rendu_quand_gemini_est_en_panne(client, compte_id):
+    # En test, la cle Gemini est absente : rien n'est analyse, rien n'est du.
+    reponse = client.post("/api/llm/scan", files={"image": ("t.jpg", b"contenu", "image/jpeg")})
+    assert reponse.status_code == 503
+    assert "pas été décompté" in reponse.json()["detail"]
+    with connexion() as db:
+        assert comptes.scans_restants(db, compte_id) == comptes.SCANS_PAR_JOUR
+
+
 # ---- Migration d'une base d'avant les comptes ----------------------------
 
 
