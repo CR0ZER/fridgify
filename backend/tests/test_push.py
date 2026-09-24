@@ -1,6 +1,12 @@
-"""Abonnements Web Push : enregistrement, purge des expires, envoi de test."""
+"""Abonnements Web Push : enregistrement, envoi, purge des expires."""
 
-from datetime import date, timedelta
+from app import push
+from app.db import connexion
+
+
+def envoyer(compte_id):
+    with connexion() as db:
+        return push.envoyer_a_tous(db, compte_id, "Titre", "Corps")
 
 
 def test_etat_expose_la_cle_publique(client):
@@ -51,52 +57,26 @@ def test_desabonnement_est_idempotent(client, abonner):
     assert client.request("DELETE", "/api/push/abonnements", json={"endpoint": endpoint}).status_code == 204
 
 
-def test_test_refuse_sans_abonne(client):
-    reponse = client.post("/api/push/test")
-    assert reponse.status_code == 409
-    assert "Aucun appareil" in reponse.json()["detail"]
-
-
-def test_test_envoie_le_contenu_reel(client, creer_lot, abonner, push_simule):
-    abonner()
-    creer_lot("Saumon", dlc=date.today().isoformat())
-
-    resultat = client.post("/api/push/test").json()
-
-    assert resultat == {"envoyes": 1, "supprimes": 0, "echecs": []}
-    assert "Saumon périme aujourd'hui" in push_simule.envois[0]["data"]
-
-
-def test_test_confirme_le_transport_quand_rien_ne_perime(client, creer_lot, abonner, push_simule):
-    abonner()
-    creer_lot("Carotte", dlc=(date.today() + timedelta(days=30)).isoformat())
-
-    assert client.post("/api/push/test").json()["envoyes"] == 1
-    assert "Frigo est prêt" in push_simule.envois[0]["data"]
-
-
-def test_abonnement_expire_est_supprime(client, abonner, push_simule):
+def test_abonnement_expire_est_supprime(client, abonner, push_simule, compte_id):
     """410 Gone est la seule facon d'apprendre qu'une application a disparu."""
     vivant = abonner("https://push.example/vivant")
     mort = abonner("https://push.example/mort")
     push_simule.refus[mort] = 410
 
-    resultat = client.post("/api/push/test").json()
+    resultat = envoyer(compte_id)
 
     assert resultat["envoyes"] == 1
     assert resultat["supprimes"] == 1
-
-    restants = [a["appareil"] for a in client.get("/api/push/etat").json()["appareils"]]
-    assert len(restants) == 1
+    assert len(client.get("/api/push/etat").json()["appareils"]) == 1
     assert push_simule.envois[0]["endpoint"] == vivant
 
 
-def test_echec_transitoire_conserve_l_abonnement(client, abonner, push_simule):
+def test_echec_transitoire_conserve_l_abonnement(client, abonner, push_simule, compte_id):
     """Un 500 du service de push est passager : l'appareil reste abonne."""
     endpoint = abonner()
     push_simule.refus[endpoint] = 500
 
-    resultat = client.post("/api/push/test").json()
+    resultat = envoyer(compte_id)
 
     assert resultat["envoyes"] == 0
     assert resultat["supprimes"] == 0
@@ -104,13 +84,12 @@ def test_echec_transitoire_conserve_l_abonnement(client, abonner, push_simule):
     assert len(client.get("/api/push/etat").json()["appareils"]) == 1
 
 
-def test_refus_403_explique_la_cause(client, abonner, push_simule, creer_lot):
+def test_refus_403_explique_la_cause(abonner, push_simule, compte_id):
     """« 403 » seul n'aide personne : le message doit dire ou chercher."""
     endpoint = abonner()
     push_simule.refus[endpoint] = 403
-    creer_lot("Saumon", dlc=date.today().isoformat())
 
-    resultat = client.post("/api/push/test").json()
+    resultat = envoyer(compte_id)
 
     assert resultat["envoyes"] == 0
     assert "VAPID_SUBJECT" in resultat["echecs"][0]

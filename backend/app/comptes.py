@@ -88,7 +88,7 @@ def lire_utilisateur(db: sqlite3.Connection, identifiant: str) -> sqlite3.Row | 
 
 
 def creer_utilisateur(db: sqlite3.Connection, identifiant: str, mot_de_passe: str) -> Utilisateur:
-    """Cree un compte. Le premier cree adopte les donnees d'avant les comptes."""
+    """Cree un compte, avec un frigo vide."""
     identifiant = identifiant.strip()
     if not identifiant:
         raise ValueError("L'identifiant ne peut pas être vide.")
@@ -97,44 +97,11 @@ def creer_utilisateur(db: sqlite3.Connection, identifiant: str, mot_de_passe: st
     if lire_utilisateur(db, identifiant) is not None:
         raise ValueError("Cet identifiant est déjà pris.")
 
-    premier = db.execute("SELECT COUNT(*) FROM utilisateurs;").fetchone()[0] == 0
     curseur = db.execute(
         "INSERT INTO utilisateurs (identifiant, mot_de_passe, date_creation) VALUES (?, ?, ?);",
         (identifiant, hacher(mot_de_passe), date.today().isoformat()),
     )
-    utilisateur_id = curseur.lastrowid
-    if premier:
-        _adopter_l_existant(db, utilisateur_id)
-
-    return Utilisateur(utilisateur_id, identifiant, date.today().isoformat())
-
-
-def _adopter_l_existant(db: sqlite3.Connection, utilisateur_id: int) -> None:
-    """Rattache au premier compte le frigo d'avant les comptes.
-
-    La mise en place des comptes laisse les anciennes lignes sans proprietaire.
-    Elles reviennent au premier compte cree, qui est celui de l'administrateur
-    du serveur : c'est son frigo qui existait avant.
-    """
-    for table in ("inventaire_frigo", "plats", "courses", "abonnements_push"):
-        db.execute(
-            f"UPDATE {table} SET utilisateur_id = ? WHERE utilisateur_id IS NULL;",
-            (utilisateur_id,),
-        )
-
-    tables = {
-        ligne["name"]
-        for ligne in db.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    }
-    if "settings" in tables:
-        db.execute(
-            """
-            INSERT OR IGNORE INTO reglages (utilisateur_id, cle, valeur)
-            SELECT ?, key, value FROM settings WHERE key != 'prompt_recipes';
-            """,
-            (utilisateur_id,),
-        )
-        db.execute("DROP TABLE settings;")
+    return Utilisateur(curseur.lastrowid, identifiant, date.today().isoformat())
 
 
 def supprimer_utilisateur(db: sqlite3.Connection, utilisateur_id: int) -> None:

@@ -123,12 +123,6 @@ export type EtatPush = {
   appareils: AppareilAbonne[]
 }
 
-export type ResultatEnvoi = {
-  envoyes: number
-  supprimes: number
-  echecs: string[]
-}
-
 /** Le compte connecté, tel que l'écran « Compte » l'affiche. */
 export type Profil = {
   identifiant: string

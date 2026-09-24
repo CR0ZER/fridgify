@@ -229,12 +229,6 @@ class EtatPush(BaseModel):
     appareils: list[AppareilAbonne] = Field(default_factory=list)
 
 
-class ResultatEnvoi(BaseModel):
-    envoyes: int
-    supprimes: int
-    echecs: list[str] = Field(default_factory=list)
-
-
 class Identifiants(BaseModel):
     """Ce que l'ecran de connexion envoie."""
 

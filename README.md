@@ -150,7 +150,6 @@ Navigateur (iPhone, ordinateur…)
 | `backend/`  | API FastAPI, base SQLite, appels Gemini, notifications         |
 | `frontend/` | PWA React + TypeScript, compilée par Vite                      |
 | `deploy/`   | nginx, unités systemd, scripts d'installation et de Tailscale  |
-| `legacy/`   | Application Expo d'origine, archivée pour référence            |
 
 ## Installation
 
@@ -182,10 +181,6 @@ créer votre compte, depuis l'écran de connexion ou en ligne de commande :
 ```bash
 cd backend && .venv/bin/python -m app.comptes creer <identifiant>
 ```
-
-Sur une installation qui tournait avant la mise en place des comptes, le premier
-compte créé hérite de l'inventaire existant : créez le vôtre avant d'ouvrir le
-serveur à d'autres personnes.
 
 ### Activer le HTTPS et les notifications
 
@@ -329,7 +324,6 @@ cd backend && .venv/bin/python -m app.comptes revoquer <identifiant> "Tableau de
 | `POST`              | `/api/llm/scan`                 | Photo de ticket → produits détectés          |
 | `GET`               | `/api/push/etat`                | Clé publique et appareils abonnés            |
 | `POST` / `DELETE`   | `/api/push/abonnements`         | Abonne / désabonne un appareil               |
-| `POST`              | `/api/push/test`                | Envoie l'alerte du jour immédiatement        |
 
 </details>
 

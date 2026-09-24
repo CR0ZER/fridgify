@@ -2,7 +2,6 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from .categories import normaliser
 from .config import get_settings
 
 SCHEMA = """
@@ -147,80 +146,9 @@ def _connect() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Cree le schema et applique les migrations additives au demarrage."""
+    """Cree le schema au demarrage."""
     with _connect() as conn:
         conn.executescript(SCHEMA)
-
-        colonnes = {row["name"] for row in conn.execute("PRAGMA table_info(inventaire_frigo);")}
-
-        if "lot_id" not in colonnes:
-            conn.execute("ALTER TABLE inventaire_frigo ADD COLUMN lot_id TEXT;")
-            conn.execute(
-                "UPDATE inventaire_frigo SET lot_id = 'legacy_' || id WHERE lot_id IS NULL;"
-            )
-        if "statut_fin" not in colonnes:
-            conn.execute("ALTER TABLE inventaire_frigo ADD COLUMN statut_fin TEXT;")
-        if "date_fin" not in colonnes:
-            conn.execute("ALTER TABLE inventaire_frigo ADD COLUMN date_fin TEXT;")
-
-        _fermer_categories(conn)
-        _supprimer_colonnes_mortes(conn, colonnes)
-        _ouvrir_aux_comptes(conn)
-
-
-def _ouvrir_aux_comptes(conn: sqlite3.Connection) -> None:
-    """Passe une base d'avant les comptes au modele multi-utilisateur.
-
-    Les lignes existantes restent sans proprietaire : elles seront rattachees au
-    premier compte cree (voir `comptes.creer_utilisateur`). Jusque-la, elles ne
-    sont visibles de personne — ce qui vaut mieux que d'etre visibles de tous.
-    """
-    for table in ("inventaire_frigo", "plats", "courses", "abonnements_push"):
-        colonnes = {row["name"] for row in conn.execute(f"PRAGMA table_info({table});")}
-        if "utilisateur_id" not in colonnes:
-            conn.execute(f"ALTER TABLE {table} ADD COLUMN utilisateur_id INTEGER;")
-
-    # L'ancienne table `settings`, globale, survit jusqu'a la creation du premier
-    # compte : c'est lui qui heritera de ses valeurs (`comptes.creer_utilisateur`).
-    # La supprimer ici perdrait le prompt de scan personnalise.
-
-
-def _fermer_categories(conn: sqlite3.Connection) -> None:
-    """Rattache les categories existantes a la liste fermee.
-
-    L'inventaire a longtemps accepte du texte libre : « Légumes » et « Légume »
-    y coexistent, et chacun produit sa propre puce de filtre. On les ramene une
-    fois pour toutes, en ne touchant que les valeurs qui changent reellement.
-    """
-    existantes = [
-        ligne["categorie"]
-        for ligne in conn.execute(
-            "SELECT DISTINCT categorie FROM inventaire_frigo WHERE categorie IS NOT NULL;"
-        )
-    ]
-    for ancienne in existantes:
-        canonique = normaliser(ancienne)
-        if canonique != ancienne:
-            conn.execute(
-                "UPDATE inventaire_frigo SET categorie = ? WHERE categorie = ?;",
-                (canonique, ancienne),
-            )
-
-
-def _supprimer_colonnes_mortes(conn: sqlite3.Connection, colonnes: set[str]) -> None:
-    """Retire les colonnes qui n'etaient plus ni lues ni ecrites.
-
-    `quantite` valait 1 partout depuis l'abandon des demi-unites, le stock se
-    comptant desormais en nombre de lignes ; `date_peremption_initiale` etait
-    ecrite a la creation et jamais relue. DROP COLUMN demande SQLite 3.35+, on
-    laisse la colonne en place plutot que d'echouer sur une version plus ancienne.
-    """
-    if sqlite3.sqlite_version_info < (3, 35, 0):
-        return
-
-    for morte in ("quantite", "date_peremption_initiale"):
-        if morte in colonnes:
-            conn.execute(f"ALTER TABLE inventaire_frigo DROP COLUMN {morte};")
 
 
 @contextmanager

@@ -36,6 +36,3 @@ l'architecture complète.
   ajoutée au backend doit venir avec ses tests.
 - **Déploiement** — `./deploy/deploy.sh` recompile et publie. Ne jamais servir
   `frontend/dist` directement : nginx lit `/var/www/fridgify`.
-
-L'application Expo/React Native d'origine est archivée dans `legacy/`. Elle
-n'est plus compilée ni maintenue : ne pas y appliquer de correctifs.

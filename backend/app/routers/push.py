@@ -1,4 +1,4 @@
-"""Abonnements Web Push et envoi de test."""
+"""Abonnements Web Push."""
 
 import sqlite3
 from datetime import date
@@ -10,14 +10,7 @@ from ..auth import utilisateur_courant
 from ..comptes import Utilisateur
 from ..config import get_settings
 from ..db import get_db
-from ..models import (
-    AbonnementPush,
-    AppareilAbonne,
-    DesabonnementPush,
-    EtatPush,
-    ResultatEnvoi,
-)
-from ..notifications import composer, produits_urgents
+from ..models import AbonnementPush, AppareilAbonne, DesabonnementPush, EtatPush
 
 router = APIRouter(prefix="/push", tags=["push"])
 
@@ -100,35 +93,3 @@ def oublier(
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-
-@router.post("/test", response_model=ResultatEnvoi)
-def envoyer_test(
-    db: sqlite3.Connection = Depends(get_db),
-    utilisateur: Utilisateur = Depends(utilisateur_courant),
-) -> ResultatEnvoi:
-    """Diffuse l'alerte telle qu'elle serait envoyee aujourd'hui.
-
-    Le message reprend le contenu reel quand quelque chose perime, pour verifier
-    la formulation autant que le transport.
-    """
-    if not push.configure():
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            "Cles VAPID absentes du serveur : notifications indisponibles.",
-        )
-    if not push.lister_abonnements(db, utilisateur.id):
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Aucun appareil abonne : activez les notifications sur cet appareil d'abord.",
-        )
-
-    settings = get_settings()
-    urgents = produits_urgents(db, utilisateur.id, settings.notification_seuil_jours, date.today())
-
-    if urgents:
-        titre, corps = composer(urgents)
-    else:
-        titre = "Frigo est prêt"
-        corps = "Rien ne périme dans les prochains jours. Ce test confirme le transport."
-
-    return ResultatEnvoi(**push.envoyer_a_tous(db, utilisateur.id, titre, corps))
